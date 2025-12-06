@@ -1,0 +1,8 @@
+{
+  "name": "Inventory Agent Chat",
+  "description": "AI-powered inventory assistant featuring conversational UI, persistent history, server-triggered actions, and multimodal capabilities.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
