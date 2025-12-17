@@ -1,3 +1,4 @@
+
 // Mirrors ChatModels.kt from PDF
 
 export enum Role {
@@ -12,7 +13,7 @@ export interface ChatTurn {
 }
 
 export interface AgentAction {
-  type: 'GENERATE_ITEM_LIST' | 'OPEN_CAMERA' | 'SHOW_DETAILS' | 'NONE';
+  type: 'GENERATE_TABLE' | 'OPEN_SCANNER' | 'NONE';
   args?: Record<string, any>;
 }
 
@@ -23,6 +24,14 @@ export interface Attachment {
   url?: string; // For local preview
 }
 
+// Generic Table Data Structure
+export interface TableData {
+  title: string;
+  columns: string[];
+  rows: Record<string, string | number>[];
+  summary?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: Role;
@@ -30,22 +39,38 @@ export interface ChatMessage {
   timestamp: number;
   isLoading?: boolean;
   action?: AgentAction; // The "Server Action" trigger
-  actionData?: any; // Result data for the action (e.g., the list of items)
+  actionData?: TableData; // Result data for the action (the generic table)
   attachments?: Attachment[]; // Multimedia attachments
+}
+
+export enum LiveConnectionState {
+  DISCONNECTED = 'disconnected',
+  CONNECTING = 'connecting',
+  CONNECTED = 'connected',
+  ERROR = 'error'
 }
 
 export interface ChatState {
   messages: ChatMessage[];
-  isLoading: boolean;
+  liveState: LiveConnectionState;
   error: string | null;
 }
 
-// Mock Inventory Item Data
-export interface InventoryItem {
+// --- Enterprise Features ---
+
+export interface Template {
   id: string;
   name: string;
-  sku: string;
-  quantity: number;
-  location: string;
-  status: 'In Stock' | 'Low Stock' | 'Out of Stock';
+  category: string; // e.g., 'Health', 'Safety', 'Operations'
+  requiredFields: { label: string; completed: boolean }[];
+  syncDestination: string; // e.g., 'Notion', 'Salesforce'
+  version: string;
+}
+
+export interface JournalEntry {
+  id: string;
+  date: string; // "Oct 12, 2024"
+  title: string;
+  status: 'Synced' | 'Pending';
+  preview: string; // "2,400 kcal" or "3 Hazards Found"
 }

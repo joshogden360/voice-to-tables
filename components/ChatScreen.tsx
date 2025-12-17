@@ -1,12 +1,96 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useChatViewModel } from '../hooks/useChatViewModel';
 import { ChatInput } from './ChatInput';
 import { MessageBubble } from './MessageBubble';
-import { Boxes, Trash2, Menu } from 'lucide-react';
+import { BriefingHeader, JournalSidebar, RightPanel, TemplateSwitcher } from './EnterpriseWidgets';
+import { Trash2, PanelLeft, PanelRight, Snowflake, RefreshCw } from 'lucide-react';
+
+// --- Snowfall Component ---
+const Snowfall: React.FC<{ intensity: number }> = ({ intensity }) => {
+  // Determine number of flakes based on intensity (0 to 1) -> 0 to 200 flakes
+  const flakeCount = Math.floor(intensity * 200);
+
+  const flakes = useMemo(() => {
+    return Array.from({ length: 200 }).map((_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      animationDuration: Math.random() * 5 + 5 + 's',
+      animationDelay: Math.random() * 5 + 's',
+      // Increased opacity and size for better visibility
+      opacity: Math.random() * 0.5 + 0.3, 
+      size: Math.random() * 0.8 + 0.4 + 'rem', // Slightly larger for icons
+    }));
+  }, []);
+
+  return (
+    <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+      <style>
+        {`
+          @keyframes snowfall {
+            0% { transform: translateY(-10vh) translateX(0) rotate(0deg); }
+            100% { transform: translateY(110vh) translateX(20px) rotate(360deg); }
+          }
+        `}
+      </style>
+      {flakes.slice(0, flakeCount).map((flake) => (
+        <div
+          key={flake.id}
+          className="absolute text-white/80"
+          style={{
+            left: `${flake.left}%`,
+            top: `-20px`,
+            width: flake.size,
+            height: flake.size,
+            opacity: flake.opacity,
+            animation: `snowfall ${flake.animationDuration} linear infinite`,
+            animationDelay: flake.animationDelay,
+          }}
+        >
+           <Snowflake strokeWidth={1.5} className="w-full h-full" />
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export const ChatScreen: React.FC = () => {
-  const { messages, isLoading, error, sendMessage, transcribeAudio, clearConversation } = useChatViewModel();
+  const { 
+    messages, 
+    isLoading, 
+    sendMessage, 
+    transcribeAudio, 
+    clearConversation, 
+    toggleLiveSession, 
+    liveState, 
+    updateMessageData,
+    activeTemplate,
+    changeTemplate,
+    templates,
+    history,
+    requirements,
+    activeTableData,
+    activeTableId,
+    setActiveTableId
+  } = useChatViewModel();
+  
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Panel States
+  const [leftOpen, setLeftOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(true);
+  
+  // Easter Egg State
+  const [showManifest, setShowManifest] = useState(false);
+  
+  // Snow State
+  const [snowIntensity, setSnowIntensity] = useState(0.5); // Default to stronger snow
+
+  // Auto-open right panel when a table is active
+  useEffect(() => {
+    if (activeTableData) {
+        setRightOpen(true);
+    }
+  }, [activeTableId]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -14,82 +98,200 @@ export const ChatScreen: React.FC = () => {
   }, [messages, isLoading]);
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 relative">
+    <div className="flex h-full w-full bg-gradient-to-br from-rose-100/40 via-slate-50 to-rose-200/40 text-slate-900 font-sans overflow-hidden relative selection:bg-rose-200 selection:text-rose-900">
       
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm z-20 sticky top-0">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-indigo-200 shadow-lg">
-            <Boxes size={22} />
+      {/* Background Decor - Christmas Theme (Red Only Glows) */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="absolute inset-0 bg-noise opacity-30 z-10 mix-blend-overlay"></div>
+          {/* Top Red Glow - More Intense */}
+          <div className="absolute top-[-20%] left-[-10%] w-[60rem] h-[60rem] bg-red-600/20 rounded-full blur-[100px] opacity-70 mix-blend-multiply animate-pulse duration-[10000ms]"></div>
+          {/* Bottom Red Glow - More Intense */}
+          <div className="absolute bottom-[-10%] right-[-20%] w-[50rem] h-[50rem] bg-rose-600/25 rounded-full blur-[80px] opacity-70 mix-blend-multiply animate-pulse duration-[8000ms]"></div>
+      </div>
+
+      {/* Snowfall Layer */}
+      <Snowfall intensity={snowIntensity} />
+
+      {/* Intensity Slider (Bottom Right - Highly Visible) */}
+      <div className="absolute bottom-6 right-6 z-50 flex items-center gap-3 bg-white/90 backdrop-blur-md p-3 rounded-full border border-rose-200 shadow-xl shadow-rose-900/10 animate-in slide-in-from-bottom-10 fade-in duration-1000">
+          <Snowflake size={18} className={`text-rose-500 ${snowIntensity > 0.8 ? 'animate-spin' : ''}`} />
+          <div className="flex flex-col w-32">
+             <input 
+                type="range" 
+                min="0" 
+                max="1" 
+                step="0.01"
+                value={snowIntensity}
+                onChange={(e) => setSnowIntensity(parseFloat(e.target.value))}
+                className="w-full h-1.5 bg-rose-100 rounded-lg appearance-none cursor-pointer accent-rose-600"
+                title="Snow Intensity"
+             />
           </div>
-          <div>
-            <h1 className="font-bold text-slate-800">Agent Chat</h1>
-            <div className="flex items-center gap-1.5">
-               <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-               <span className="text-xs text-slate-500 font-medium">Inventory Module Online</span>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-rose-800 w-12 text-right">Let it snow</span>
+      </div>
+
+      {/* EASTER EGG OVERLAY: SCRIPT MANIFEST */}
+      {showManifest && (
+        <div 
+            className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/95 backdrop-blur-xl animate-in fade-in duration-500 cursor-pointer"
+            onClick={() => setShowManifest(false)}
+        >
+            <div className="max-w-3xl w-full p-12 md:p-16 text-rose-50 font-mono text-sm leading-relaxed border border-rose-500/30 rounded-lg bg-black/40 shadow-2xl relative overflow-hidden group">
+                {/* Vintage CRT scanline effect */}
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-10 pointer-events-none bg-[length:100%_4px,3px_100%]"></div>
+                
+                <div className="relative z-20">
+                    <div className="mb-12 text-center border-b border-rose-500/30 pb-6">
+                        <h2 className="text-3xl font-bold tracking-[0.3em] text-rose-500 uppercase font-sans">Technical Manifest</h2>
+                        <p className="mt-2 text-[10px] text-slate-400 uppercase tracking-widest">Confidential • Architecture Review</p>
+                    </div>
+
+                    <div className="space-y-8 font-mono">
+                        <div>
+                            <p className="text-slate-400 mb-1 text-xs uppercase tracking-widest">Scene: Browser Window - Day</p>
+                            <p className="text-rose-200">REACT 19 initializes the view. TYPESCRIPT ensures type safety.</p>
+                        </div>
+
+                        <div className="pl-8 border-l-2 border-rose-500/20">
+                            <h3 className="text-xs font-bold text-rose-400 uppercase tracking-widest mb-2">Audio Engine (V.O.)</h3>
+                            <p className="text-slate-300">
+                                I am utilizing the Web Audio API. I bypass standard browser decoders for raw speed.<br/><br/>
+                                I encode 16-bit PCM audio at 16kHz for the uplink.<br/>
+                                I decode incoming chunks at 24kHz for the downlink.<br/>
+                                My buffers are scheduled manually for zero-latency gapless playback.
+                            </p>
+                        </div>
+
+                        <div className="pl-8 border-l-2 border-rose-500/20">
+                            <h3 className="text-xs font-bold text-rose-400 uppercase tracking-widest mb-2">Google GenAI SDK (Entering)</h3>
+                            <p className="text-slate-300">
+                                I connect via WebSockets using the Live API. My model is Gemini 2.5 Flash.<br/>
+                                I listen. I speak. When I hear structured data, I trigger the 'generateTable' tool.
+                            </p>
+                        </div>
+
+                        <div>
+                            <h3 className="text-xs font-bold text-rose-400 uppercase tracking-widest mb-2">System</h3>
+                            <p className="text-rose-200">
+                                The schema is dynamic. It changes based on the user's template.<br/>
+                                Unstructured voice becomes structured JSON.<br/>
+                                Instantaneously.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="mt-12 text-center opacity-50 text-[10px] uppercase tracking-[0.2em] animate-pulse">
+                        End of Transmission
+                    </div>
+                </div>
             </div>
+        </div>
+      )}
+
+      {/* --- LEFT PANEL: JOURNAL --- */}
+      <div className={`
+        ${leftOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:w-0 md:translate-x-0'} 
+        flex-shrink-0 bg-white/40 backdrop-blur-xl border-r border-white/50 z-20 transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] relative overflow-hidden
+      `}>
+          <div className="w-64 h-full absolute top-0 right-0">
+             <JournalSidebar entries={history} />
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-            <button 
-                onClick={clearConversation}
-                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                title="Clear History"
-            >
-                <Trash2 size={20} />
-            </button>
-            <button className="md:hidden p-2 text-slate-400 hover:text-slate-600">
-                <Menu size={20} />
-            </button>
-        </div>
-      </header>
+      </div>
 
-      {/* Message List */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-hide">
-        <div className="max-w-4xl mx-auto">
-          {messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
-          ))}
-
-          {/* Loading Indicator */}
-          {isLoading && (
-            <div className="flex justify-start mb-6">
-               <div className="flex items-start gap-3">
-                 <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center">
-                    <Boxes size={16} className="text-indigo-600 animate-pulse" />
-                 </div>
-                 <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1">
-                    <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                    <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                    <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></span>
-                 </div>
-               </div>
+      {/* --- CENTER PANEL: WORKSPACE --- */}
+      <div className="flex-1 flex flex-col min-w-0 z-10 relative bg-transparent">
+        
+        {/* Sticky Header */}
+        <header className="h-16 flex items-center justify-between px-4 border-b border-white/30 bg-white/20 backdrop-blur-md z-30 flex-shrink-0">
+            <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setLeftOpen(!leftOpen)}
+                  className="p-2 text-slate-500 hover:text-rose-600 hover:bg-white/50 rounded-lg transition-colors"
+                >
+                    <PanelLeft size={20} className={!leftOpen ? 'opacity-50' : ''} />
+                </button>
+                <div className="h-4 w-px bg-slate-300/50"></div>
+                <h1 className="text-lg font-serif italic text-slate-800 hidden md:block">Voice to Data <span className="text-xs not-italic text-rose-500/80 tracking-widest ml-2 font-sans uppercase">Holiday Edition</span></h1>
             </div>
-          )}
 
-          {/* Error Message */}
-          {error && (
-            <div className="flex justify-center my-4">
-              <div className="bg-red-50 text-red-600 px-4 py-2 rounded-full text-sm border border-red-100 shadow-sm flex items-center gap-2">
-                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                {error}
-              </div>
+            {/* Briefing Info Centered */}
+            <div className="flex-1 flex justify-center">
+                 <BriefingHeader template={activeTemplate} />
             </div>
-          )}
 
-          <div ref={bottomRef} />
+            <div className="flex items-center gap-4">
+                 <button 
+                    onClick={clearConversation}
+                    className="p-2 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
+                    title="Start Fresh"
+                >
+                    <RefreshCw size={18} />
+                </button>
+                <div className="h-4 w-px bg-slate-300/50"></div>
+                <button 
+                  onClick={() => setRightOpen(!rightOpen)}
+                  className="p-2 text-slate-500 hover:text-rose-600 hover:bg-white/50 rounded-lg transition-colors"
+                >
+                    <PanelRight size={20} className={!rightOpen ? 'opacity-50' : ''} />
+                </button>
+            </div>
+        </header>
+
+        {/* Scrollable Chat Area */}
+        <main className="flex-1 overflow-y-auto relative scrollbar-hide">
+            <div className="min-h-full flex flex-col justify-end pb-56 pt-10 px-4 md:px-12 max-w-4xl mx-auto">
+                {messages.map((msg) => (
+                <MessageBubble 
+                    key={msg.id} 
+                    message={msg} 
+                    onUpdateTable={(newData) => {
+                        updateMessageData(msg.id, newData);
+                        setActiveTableId(msg.id); // Sync right panel on edit
+                    }}
+                    onFocus={() => {
+                        if (msg.actionData) setActiveTableId(msg.id); // Sync right panel on click
+                    }}
+                />
+                ))}
+                <div ref={bottomRef} />
+            </div>
+        </main>
+
+        {/* Floating Input Controls */}
+        <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-40">
+             {/* Template Switcher */}
+            <div className="absolute bottom-48 left-0 right-0 flex justify-center pb-4 animate-in slide-in-from-bottom-4 duration-1000 pointer-events-auto">
+                <TemplateSwitcher 
+                    templates={templates} 
+                    activeTemplate={activeTemplate} 
+                    onSelect={changeTemplate}
+                    onEasterEgg={() => setShowManifest(true)}
+                />
+            </div>
+
+            <ChatInput 
+                onSend={sendMessage} 
+                onTranscribe={transcribeAudio}
+                onToggleLive={toggleLiveSession}
+                liveState={liveState}
+                disabled={false} 
+            />
         </div>
-      </main>
+      </div>
 
-      {/* Input Area */}
-      <ChatInput 
-        onSend={sendMessage} 
-        onTranscribe={transcribeAudio}
-        disabled={isLoading} 
-      />
+      {/* --- RIGHT PANEL: DATA & TOOLS --- */}
+      <div className={`
+        ${rightOpen ? 'w-96 translate-x-0' : 'w-0 translate-x-full'} 
+        flex-shrink-0 bg-white/60 backdrop-blur-2xl border-l border-white/50 z-20 transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] relative overflow-hidden shadow-2xl
+      `}>
+         <div className="w-96 h-full absolute top-0 left-0 flex flex-col">
+             <RightPanel 
+                requirements={requirements} 
+                tableData={activeTableData} 
+                onUpdateTable={(newData) => activeTableId && updateMessageData(activeTableId, newData)}
+             />
+         </div>
+      </div>
     </div>
   );
 };

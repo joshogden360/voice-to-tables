@@ -1,6 +1,6 @@
 {
-  "name": "Inventory Agent Chat",
-  "description": "AI-powered inventory assistant featuring conversational UI, persistent history, server-triggered actions, and multimodal capabilities.",
+  "name": "VOICE TO TABLES AI PROCESSOR WITH GEMINI 3 ",
+  "description": "AI-powered form. Instead of traditional text and multiple choice inputs, users have a conversation and conversation data gets neatly organized into tables for filtering, querying and generating reports.",
   "requestFramePermissions": [
     "camera",
     "microphone"
