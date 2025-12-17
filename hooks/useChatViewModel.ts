@@ -173,37 +173,53 @@ export function useChatViewModel() {
   }, []);
 
   const toggleLiveSession = useCallback(async () => {
+    console.log('[ViewModel] toggleLiveSession called, current state:', liveState);
+    
     if (liveState === LiveConnectionState.CONNECTED || liveState === LiveConnectionState.CONNECTING) {
+      console.log('[ViewModel] Stopping live session...');
       await chatRepository.stopLiveSession();
       setLiveState(LiveConnectionState.DISCONNECTED);
       return;
     }
 
     setError(null);
+    console.log('[ViewModel] Starting live session with template:', activeTemplate.name);
     
-    // Pass activeTemplate to startLiveSession
-    await chatRepository.startLiveSession(
-      activeTemplate,
-      (state) => setLiveState(state),
-      (text, action, actionData) => {
-        setMessages(prev => {
-          const newMsg: ChatMessage = {
-            id: Date.now().toString(),
-            role: Role.ASSISTANT,
-            content: text || (action ? "Updating table..." : "Listening..."),
-            timestamp: Date.now(),
-            action: action,
-            actionData: actionData
-          };
-          // If this message has a table, make it active
-          if (actionData) {
-              setActiveTableId(newMsg.id);
-          }
-          return [...prev, newMsg];
-        });
-      },
-      (err) => setError(err)
-    );
+    try {
+      // Pass activeTemplate to startLiveSession
+      await chatRepository.startLiveSession(
+        activeTemplate,
+        (state) => {
+          console.log('[ViewModel] Live state changed to:', state);
+          setLiveState(state);
+        },
+        (text, action, actionData) => {
+          console.log('[ViewModel] Received message:', { text, action, hasData: !!actionData });
+          setMessages(prev => {
+            const newMsg: ChatMessage = {
+              id: Date.now().toString(),
+              role: Role.ASSISTANT,
+              content: text || (action ? "Updating table..." : "Listening..."),
+              timestamp: Date.now(),
+              action: action,
+              actionData: actionData
+            };
+            // If this message has a table, make it active
+            if (actionData) {
+                setActiveTableId(newMsg.id);
+            }
+            return [...prev, newMsg];
+          });
+        },
+        (err) => {
+          console.error('[ViewModel] Session error:', err);
+          setError(err);
+        }
+      );
+    } catch (e) {
+      console.error('[ViewModel] toggleLiveSession exception:', e);
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    }
   }, [liveState, activeTemplate]);
 
   // Legacy text sending
@@ -216,6 +232,14 @@ export function useChatViewModel() {
   const activeTableData = activeTableId 
     ? messages.find(m => m.id === activeTableId)?.actionData 
     : null;
+
+  // Debug info for audio troubleshooting
+  const getAudioDebugInfo = useCallback(() => {
+    return {
+      sent: chatRepository.debugAudioChunksSent,
+      received: chatRepository.debugAudioChunksReceived
+    };
+  }, []);
 
   return {
     messages,
@@ -234,6 +258,7 @@ export function useChatViewModel() {
     requirements,
     activeTableData,
     activeTableId,
-    setActiveTableId
+    setActiveTableId,
+    getAudioDebugInfo
   };
 }

@@ -13,6 +13,13 @@ interface ChatInputProps {
 export const ChatInput: React.FC<ChatInputProps> = ({ onToggleLive, liveState, disabled }) => {
   const isConnected = liveState === LiveConnectionState.CONNECTED;
   const isConnecting = liveState === LiveConnectionState.CONNECTING;
+  
+  const handleMicClick = () => {
+    console.log('[ChatInput] Mic button clicked! Current state:', liveState, 'disabled:', disabled, 'isConnecting:', isConnecting);
+    if (!disabled && !isConnecting) {
+      onToggleLive();
+    }
+  };
 
   // Visualizer simulation
   const [visualData, setVisualData] = useState<number[]>(new Array(12).fill(0.2));
@@ -61,7 +68,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onToggleLive, liveState, d
             
             {/* The Glass Button */}
             <button 
-                onClick={onToggleLive}
+                onClick={handleMicClick}
                 disabled={disabled || isConnecting}
                 className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-700 cubic-bezier(0.34, 1.56, 0.64, 1) backdrop-blur-xl border border-white/60 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] hover:scale-105 active:scale-95 ${
                     isConnected

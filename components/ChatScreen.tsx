@@ -62,6 +62,7 @@ export const ChatScreen: React.FC = () => {
     clearConversation, 
     toggleLiveSession, 
     liveState, 
+    error,
     updateMessageData,
     activeTemplate,
     changeTemplate,
@@ -70,14 +71,35 @@ export const ChatScreen: React.FC = () => {
     requirements,
     activeTableData,
     activeTableId,
-    setActiveTableId
+    setActiveTableId,
+    getAudioDebugInfo
   } = useChatViewModel();
+  
+  // Debug state display
+  const [debugInfo, setDebugInfo] = useState<string>('');
+  
+  useEffect(() => {
+    // Update debug info periodically when connected
+    const updateDebug = () => {
+      const audioInfo = getAudioDebugInfo();
+      const info = `State: ${liveState} | Sent: ${audioInfo.sent} | Recv: ${audioInfo.received}${error ? ` | Err: ${error}` : ''}`;
+      setDebugInfo(info);
+    };
+    
+    updateDebug();
+    
+    // Update every 500ms while connected
+    if (liveState === 'connected') {
+      const interval = setInterval(updateDebug, 500);
+      return () => clearInterval(interval);
+    }
+  }, [liveState, error, getAudioDebugInfo]);
   
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Panel States
-  const [leftOpen, setLeftOpen] = useState(true);
-  const [rightOpen, setRightOpen] = useState(true);
+  // Panel States - Default closed on mobile
+  const [leftOpen, setLeftOpen] = useState(false);
+  const [rightOpen, setRightOpen] = useState(false);
   
   // Easter Egg State
   const [showManifest, setShowManifest] = useState(false);
@@ -111,9 +133,16 @@ export const ChatScreen: React.FC = () => {
 
       {/* Snowfall Layer */}
       <Snowfall intensity={snowIntensity} />
+      
+      {/* Debug Info Overlay - Shows state and errors on screen */}
+      {(error || liveState !== 'disconnected') && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[100] bg-black/80 text-white text-xs px-4 py-2 rounded-full backdrop-blur-md font-mono max-w-[90%] truncate">
+          {debugInfo}
+        </div>
+      )}
 
-      {/* Intensity Slider (Bottom Right - Highly Visible) */}
-      <div className="absolute bottom-6 right-6 z-50 flex items-center gap-3 bg-white/90 backdrop-blur-md p-3 rounded-full border border-rose-200 shadow-xl shadow-rose-900/10 animate-in slide-in-from-bottom-10 fade-in duration-1000">
+      {/* Intensity Slider (Bottom Right - Highly Visible) - Hidden on mobile for space */}
+      <div className="hidden md:flex absolute bottom-6 right-6 z-30 items-center gap-3 bg-white/90 backdrop-blur-md p-3 rounded-full border border-rose-200 shadow-xl shadow-rose-900/10 animate-in slide-in-from-bottom-10 fade-in duration-1000">
           <Snowflake size={18} className={`text-rose-500 ${snowIntensity > 0.8 ? 'animate-spin' : ''}`} />
           <div className="flex flex-col w-32">
              <input 
@@ -190,47 +219,58 @@ export const ChatScreen: React.FC = () => {
 
       {/* --- LEFT PANEL: JOURNAL --- */}
       <div className={`
-        ${leftOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:w-0 md:translate-x-0'} 
-        flex-shrink-0 bg-white/40 backdrop-blur-xl border-r border-white/50 z-20 transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] relative overflow-hidden
+        ${leftOpen ? 'fixed md:relative left-0 top-0 w-64 md:w-64 translate-x-0 z-50 md:z-20' : 'fixed md:relative w-0 -translate-x-full'} 
+        h-full flex-shrink-0 bg-white/95 md:bg-white/40 backdrop-blur-xl border-r border-white/50 transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] overflow-hidden shadow-2xl md:shadow-none
       `}>
-          <div className="w-64 h-full absolute top-0 right-0">
+          <div className="w-64 h-full">
              <JournalSidebar entries={history} />
           </div>
       </div>
+      
+      {/* Mobile Overlay for Left Panel */}
+      {leftOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setLeftOpen(false)}
+        />
+      )}
 
       {/* --- CENTER PANEL: WORKSPACE --- */}
       <div className="flex-1 flex flex-col min-w-0 z-10 relative bg-transparent">
         
         {/* Sticky Header */}
-        <header className="h-16 flex items-center justify-between px-4 border-b border-white/30 bg-white/20 backdrop-blur-md z-30 flex-shrink-0">
-            <div className="flex items-center gap-4">
+        <header className="h-auto min-h-16 pt-safe flex items-center justify-between px-3 md:px-4 border-b border-white/30 bg-white/20 backdrop-blur-md z-30 flex-shrink-0">
+            <div className="flex items-center gap-2 md:gap-4">
                 <button 
                   onClick={() => setLeftOpen(!leftOpen)}
-                  className="p-2 text-slate-500 hover:text-rose-600 hover:bg-white/50 rounded-lg transition-colors"
+                  className="p-2 text-slate-500 hover:text-rose-600 hover:bg-white/50 rounded-lg transition-colors touch-manipulation"
+                  aria-label="Toggle History"
                 >
                     <PanelLeft size={20} className={!leftOpen ? 'opacity-50' : ''} />
                 </button>
-                <div className="h-4 w-px bg-slate-300/50"></div>
-                <h1 className="text-lg font-serif italic text-slate-800 hidden md:block">Voice to Data <span className="text-xs not-italic text-rose-500/80 tracking-widest ml-2 font-sans uppercase">Holiday Edition</span></h1>
+                <div className="h-4 w-px bg-slate-300/50 hidden md:block"></div>
+                <h1 className="text-base md:text-lg font-serif italic text-slate-800 hidden sm:block">Voice to Data <span className="text-[10px] md:text-xs not-italic text-rose-500/80 tracking-widest ml-1 md:ml-2 font-sans uppercase">Holiday</span></h1>
             </div>
 
-            {/* Briefing Info Centered */}
-            <div className="flex-1 flex justify-center">
+            {/* Briefing Info Centered - Responsive */}
+            <div className="flex-1 flex justify-center px-2">
                  <BriefingHeader template={activeTemplate} />
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
                  <button 
                     onClick={clearConversation}
-                    className="p-2 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
+                    className="p-2 text-slate-400 hover:text-red-600 rounded-lg transition-colors touch-manipulation"
                     title="Start Fresh"
+                    aria-label="Clear conversation"
                 >
                     <RefreshCw size={18} />
                 </button>
-                <div className="h-4 w-px bg-slate-300/50"></div>
+                <div className="h-4 w-px bg-slate-300/50 hidden md:block"></div>
                 <button 
                   onClick={() => setRightOpen(!rightOpen)}
-                  className="p-2 text-slate-500 hover:text-rose-600 hover:bg-white/50 rounded-lg transition-colors"
+                  className="p-2 text-slate-500 hover:text-rose-600 hover:bg-white/50 rounded-lg transition-colors touch-manipulation"
+                  aria-label="Toggle Data Panel"
                 >
                     <PanelRight size={20} className={!rightOpen ? 'opacity-50' : ''} />
                 </button>
@@ -239,7 +279,7 @@ export const ChatScreen: React.FC = () => {
 
         {/* Scrollable Chat Area */}
         <main className="flex-1 overflow-y-auto relative scrollbar-hide">
-            <div className="min-h-full flex flex-col justify-end pb-56 pt-10 px-4 md:px-12 max-w-4xl mx-auto">
+            <div className="min-h-full flex flex-col justify-end pb-64 md:pb-56 pt-6 md:pt-10 px-3 md:px-12 max-w-4xl mx-auto">
                 {messages.map((msg) => (
                 <MessageBubble 
                     key={msg.id} 
@@ -258,9 +298,9 @@ export const ChatScreen: React.FC = () => {
         </main>
 
         {/* Floating Input Controls */}
-        <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-40">
+        <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-40 pb-safe">
              {/* Template Switcher */}
-            <div className="absolute bottom-48 left-0 right-0 flex justify-center pb-4 animate-in slide-in-from-bottom-4 duration-1000 pointer-events-auto">
+            <div className="absolute bottom-40 md:bottom-48 left-0 right-0 flex justify-center pb-2 md:pb-4 px-2 animate-in slide-in-from-bottom-4 duration-1000 pointer-events-auto">
                 <TemplateSwitcher 
                     templates={templates} 
                     activeTemplate={activeTemplate} 
@@ -281,17 +321,26 @@ export const ChatScreen: React.FC = () => {
 
       {/* --- RIGHT PANEL: DATA & TOOLS --- */}
       <div className={`
-        ${rightOpen ? 'w-96 translate-x-0' : 'w-0 translate-x-full'} 
-        flex-shrink-0 bg-white/60 backdrop-blur-2xl border-l border-white/50 z-20 transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] relative overflow-hidden shadow-2xl
+        ${rightOpen ? 'fixed md:relative right-0 top-0 w-full md:w-96 translate-x-0 z-50 md:z-20' : 'fixed md:relative w-0 translate-x-full'} 
+        h-full flex-shrink-0 bg-white/95 md:bg-white/60 backdrop-blur-2xl border-l border-white/50 transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] overflow-hidden shadow-2xl
       `}>
-         <div className="w-96 h-full absolute top-0 left-0 flex flex-col">
+         <div className="w-full md:w-96 h-full flex flex-col">
              <RightPanel 
                 requirements={requirements} 
                 tableData={activeTableData} 
                 onUpdateTable={(newData) => activeTableId && updateMessageData(activeTableId, newData)}
+                onClose={() => setRightOpen(false)}
              />
          </div>
       </div>
+      
+      {/* Mobile Overlay for Right Panel */}
+      {rightOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setRightOpen(false)}
+        />
+      )}
     </div>
   );
 };

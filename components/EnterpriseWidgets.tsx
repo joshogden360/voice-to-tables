@@ -10,17 +10,17 @@ interface BriefingHeaderProps {
 
 export const BriefingHeader: React.FC<BriefingHeaderProps> = ({ template }) => {
   return (
-    <div className="flex flex-col items-center gap-0.5 animate-in fade-in">
+    <div className="flex flex-col items-center gap-0.5 animate-in fade-in max-w-[200px] md:max-w-none">
       <div className="flex items-center gap-2">
           {/* Template Badge */}
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-50/50 border border-rose-100/50 cursor-default">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-            <span className="text-[9px] uppercase tracking-widest font-mono text-rose-800 font-bold">
+          <div className="flex items-center gap-1 md:gap-1.5 px-1.5 md:px-2 py-0.5 rounded-full bg-rose-50/50 border border-rose-100/50 cursor-default">
+            <span className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-rose-500 animate-pulse" />
+            <span className="text-[8px] md:text-[9px] uppercase tracking-wider md:tracking-widest font-mono text-rose-800 font-bold truncate">
               {template.name}
             </span>
           </div>
       </div>
-      <p className="text-[8px] font-mono text-slate-400 tracking-[0.1em] uppercase">Syncing to {template.syncDestination}</p>
+      <p className="text-[7px] md:text-[8px] font-mono text-slate-400 tracking-[0.1em] uppercase hidden sm:block truncate">Syncing to {template.syncDestination}</p>
     </div>
   );
 };
@@ -115,15 +115,24 @@ interface RightPanelProps {
     requirements: { label: string; completed: boolean }[];
     tableData?: TableData | null;
     onUpdateTable?: (data: TableData) => void;
+    onClose?: () => void;
 }
 
-export const RightPanel: React.FC<RightPanelProps> = ({ requirements, tableData, onUpdateTable }) => {
+export const RightPanel: React.FC<RightPanelProps> = ({ requirements, tableData, onUpdateTable, onClose }) => {
     const [activeTab, setActiveTab] = useState<'data' | 'tasks'>('data');
 
     return (
         <div className="flex flex-col h-full w-full bg-slate-50/50">
             {/* Tabs */}
             <div className="flex items-center p-2 gap-2 border-b border-slate-200/50 bg-white/40 backdrop-blur-md">
+                {onClose && (
+                    <button 
+                        onClick={onClose}
+                        className="p-2 -ml-1 mr-1 text-slate-400 hover:text-rose-600 rounded-lg md:hidden"
+                    >
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                )}
                 <button 
                     onClick={() => setActiveTab('data')}
                     className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'data' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-400 hover:bg-white/50'}`}
