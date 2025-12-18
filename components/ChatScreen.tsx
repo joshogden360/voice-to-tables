@@ -84,6 +84,9 @@ export const ChatScreen: React.FC = () => {
   
   // UI Aesthetic State
   const [auraIntensity, setAuraIntensity] = useState(0.6);
+  
+  // Track Mode - Voice Survey (Goal: Dec 25)
+  const [surveyMode, setSurveyMode] = useState(true);
 
   // Auto-open right panel when a table is active
   useEffect(() => {
@@ -245,8 +248,17 @@ export const ChatScreen: React.FC = () => {
                 </button>
                 <div className="h-4 w-px bg-slate-200 mx-0.5 hidden sm:block"></div>
                 <button 
+                  onClick={() => setSurveyMode(!surveyMode)}
+                  className={`p-2 rounded-lg transition-all active:scale-95 flex items-center gap-2 ${surveyMode ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
+                  title={surveyMode ? 'Survey Mode Active' : 'Enable Survey Mode'}
+                >
+                    <RefreshCw size={16} className={surveyMode ? 'animate-pulse' : ''} />
+                    <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Survey</span>
+                </button>
+                <div className="h-4 w-px bg-slate-200 mx-0.5 hidden sm:block"></div>
+                <button 
                   onClick={() => setRightOpen(!rightOpen)}
-                  className={`p-2 rounded-lg transition-all active:scale-95 ${rightOpen ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
+                  className={`p-2 rounded-lg transition-all active:scale-95 ${rightOpen ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
                   aria-label="Toggle Data Panel"
                 >
                     <PanelRight size={16} />
@@ -268,6 +280,8 @@ export const ChatScreen: React.FC = () => {
                 <MessageBubble 
                     key={msg.id} 
                     message={msg} 
+                    isLast={isLoading && msg.id === messages[messages.length - 1].id}
+                    hideIfAssistant={surveyMode}
                     onUpdateTable={(newData) => {
                         updateMessageData(msg.id, newData);
                         setActiveTableId(msg.id); // Sync right panel on edit

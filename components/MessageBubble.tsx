@@ -7,9 +7,17 @@ interface MessageBubbleProps {
   message: ChatMessage;
   onUpdateTable?: (data: TableData) => void;
   onFocus?: () => void;
+  hideIfAssistant?: boolean;
+  isLast?: boolean;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onUpdateTable, onFocus }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ 
+  message, 
+  onUpdateTable, 
+  onFocus,
+  hideIfAssistant = false,
+  isLast = false
+}) => {
   const isUser = message.role === Role.USER;
   const isSystem = message.role === Role.SYSTEM;
 
@@ -27,6 +35,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onUpdateT
 
   // AI Messages are "Questions" - High-End Editorial Style
   if (!isUser) {
+    if (hideIfAssistant && !message.action) {
+        return null; // Entirely hidden in survey mode if no action data
+    }
+
     // Check if the message is a structured greeting (Header + Bullets)
     const contentLines = message.content.split('\n');
     const isStructured = contentLines.length > 1;
@@ -34,51 +46,57 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onUpdateT
     return (
       <div className="flex flex-col items-center w-full mb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
         
-        {/* Organic Blob Avatar - Christmas Edition (Red Only) */}
-        <div className="w-16 h-16 mb-8 relative flex items-center justify-center">
-            <div className="absolute inset-0 bg-gradient-to-tr from-rose-400 to-red-400 opacity-20 blur-xl rounded-full"></div>
-            <div className="w-full h-full bg-gradient-to-tr from-rose-500 via-red-500 to-rose-400 animate-morph shadow-lg flex items-center justify-center relative z-10">
-                 <Snowflake size={24} className="text-white mix-blend-overlay" />
-            </div>
-        </div>
-
-        {/* Content */}
-        <div className="max-w-3xl text-center space-y-8 px-4 w-full">
-            {isStructured ? (
-                <div className="flex flex-col items-center gap-6 w-full">
-                    <h2 className="text-3xl md:text-4xl font-serif text-slate-900 leading-tight">
-                        {contentLines[0]}
-                    </h2>
-                    <div className="text-left bg-white/40 backdrop-blur-md p-6 rounded-2xl border border-white/50 shadow-sm ring-1 ring-white/60 w-auto min-w-[300px] max-w-xl mx-auto">
-                        <ul className="space-y-3">
-                            {contentLines.slice(1).map((line, i) => (
-                                <li key={i} className="flex items-start gap-3 text-slate-700 font-sans">
-                                    <span className="mt-2 w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0" />
-                                    <span className="text-base md:text-lg leading-relaxed">{line.replace(/^[•-]\s*/, '')}</span>
-                                </li>
-                            ))}
-                        </ul>
+        {/* Only show avatar/text if NOT hidden */}
+        {!hideIfAssistant && (
+            <>
+                {/* Organic Blob Avatar - Christmas Edition (Red Only) */}
+                <div className="w-16 h-16 mb-8 relative flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-rose-400 to-red-400 opacity-20 blur-xl rounded-full"></div>
+                    <div className="w-full h-full bg-gradient-to-tr from-rose-500 via-red-500 to-rose-400 animate-morph shadow-lg flex items-center justify-center relative z-10">
+                        <Snowflake size={24} className="text-white mix-blend-overlay" />
                     </div>
                 </div>
-            ) : (
-                <h2 className="text-3xl md:text-5xl font-serif text-slate-900 leading-[1.15] tracking-tight antialiased drop-shadow-sm">
-                    {message.content}
-                </h2>
-            )}
-            
-            {message.action && (
-                <div className="pt-4 flex justify-center w-full">
-                   <div className="w-full max-w-2xl text-left transform transition-all duration-700 hover:scale-[1.01]">
-                       <ActionContainer 
-                        action={message.action} 
-                        data={message.actionData} 
-                        onUpdate={onUpdateTable}
-                        onFocus={onFocus}
-                       />
-                   </div>
+
+                {/* Content */}
+                <div className="max-w-3xl text-center space-y-8 px-4 w-full">
+                    {isStructured ? (
+                        <div className="flex flex-col items-center gap-6 w-full">
+                            <h2 className="text-3xl md:text-4xl font-serif text-slate-900 leading-tight">
+                                {contentLines[0]}
+                            </h2>
+                            <div className="text-left bg-white/40 backdrop-blur-md p-6 rounded-2xl border border-white/50 shadow-sm ring-1 ring-white/60 w-auto min-w-[300px] max-w-xl mx-auto">
+                                <ul className="space-y-3">
+                                    {contentLines.slice(1).map((line, i) => (
+                                        <li key={i} className="flex items-start gap-3 text-slate-700 font-sans">
+                                            <span className="mt-2 w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0" />
+                                            <span className="text-base md:text-lg leading-relaxed">{line.replace(/^[•-]\s*/, '')}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    ) : (
+                        <h2 className="text-3xl md:text-5xl font-serif text-slate-900 leading-[1.15] tracking-tight antialiased drop-shadow-sm">
+                            {message.content}
+                        </h2>
+                    )}
                 </div>
-            )}
-        </div>
+            </>
+        )}
+        
+        {/* Actions are always rendered if they exist, even in survey mode */}
+        {message.action && (
+            <div className={`pt-4 flex justify-center w-full ${hideIfAssistant ? 'mt-0' : 'mt-4'}`}>
+                <div className="w-full max-w-2xl text-left transform transition-all duration-700 hover:scale-[1.01]">
+                    <ActionContainer 
+                    action={message.action} 
+                    data={message.actionData} 
+                    onUpdate={onUpdateTable}
+                    onFocus={onFocus}
+                    />
+                </div>
+            </div>
+        )}
       </div>
     );
   }
