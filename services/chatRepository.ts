@@ -73,23 +73,6 @@ class ChatRepository {
     this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   }
 
-  async loadHistory(): Promise<ChatMessage[]> {
-    // Use sessionStorage so data is cleared when the tab/browser is closed
-    const stored = sessionStorage.getItem('chat_history');
-    if (stored) {
-      return JSON.parse(stored);
-    }
-    return [];
-  }
-
-  async saveHistory(messages: ChatMessage[]) {
-    sessionStorage.setItem('chat_history', JSON.stringify(messages));
-  }
-
-  async clearHistory() {
-    sessionStorage.removeItem('chat_history');
-  }
-
   // --- LIVE API IMPLEMENTATION ---
 
   async startLiveSession(

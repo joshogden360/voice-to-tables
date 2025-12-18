@@ -1,6 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../convex/_generated/api";
 import { ChatMessage, Role, Attachment, LiveConnectionState, AgentAction, TableData, Template, JournalEntry } from '../types';
 import { chatRepository } from '../services/chatRepository';
+import { useAuth } from './useAuth';
+import { authService } from '../services/authService';
 
 // Mock Templates
 const TEMPLATES: Template[] = [
@@ -41,6 +45,32 @@ const TEMPLATES: Template[] = [
       { label: 'Food Items', completed: false },
       { label: 'Portion / Notes', completed: false },
     ]
+  },
+  {
+    id: 'field-inspection',
+    name: 'Safety Site Inspection',
+    category: 'Safety',
+    version: 'v1.2.0',
+    syncDestination: 'Procore / ERP',
+    requiredFields: [
+      { label: 'Location / Zone', completed: false },
+      { label: 'Hazard Type', completed: false },
+      { label: 'Severity Level', completed: false },
+      { label: 'Corrective Action', completed: false },
+    ]
+  },
+  {
+    id: 'patient-intake',
+    name: 'Medical Intake Form',
+    category: 'Medicine',
+    version: 'v5.1.0',
+    syncDestination: 'Epic / FHIR',
+    requiredFields: [
+      { label: 'Patient Name', completed: false },
+      { label: 'Primary Symptom', completed: false },
+      { label: 'Medications', completed: false },
+      { label: 'Allergies', completed: false },
+    ]
   }
 ];
 
@@ -56,6 +86,10 @@ const getGreeting = (templateId: string) => {
     switch(templateId) {
         case 'holiday-prep': 
             return "Holiday Feast Planner\nIdentify dishes you want to serve\nCheck ingredient availability\nAssign chefs and dietary notes";
+        case 'field-inspection': 
+            return "Safety Site Inspection\nDocument the location and hazards\nIdentify severity levels\nRecord corrective action items";
+        case 'patient-intake': 
+            return "Medical Intake Assistant\nGather patient name and symptoms\nCheck current medications\nVerify any known allergies";
         case 'meeting-master': 
             return "Executive Meeting Recorder\nCapture agenda topics\nRecord key decisions\nTrack action items and owners";
         case 'food-log': 
@@ -66,183 +100,179 @@ const getGreeting = (templateId: string) => {
 };
 
 export function useChatViewModel() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Get authenticated user info
+  const { user, sessionId: userSessionId, isSignedIn, isLoaded } = useAuth();
+  
+  // Don't run queries until user is loaded and signed in
+  const shouldFetchData = isLoaded && isSignedIn && user && userSessionId;
+  
+  // Convex Real-time State - only fetch when authenticated
+  // Backend now uses ctx.auth.getUserIdentity() for userId
+  const convexMessages = useQuery(
+    api.messages.list, 
+    shouldFetchData ? { sessionId: userSessionId! } : "skip"
+  ) || [];
+  
+  const activeTable = useQuery(
+    api.tables.getBySession, 
+    shouldFetchData ? { sessionId: userSessionId! } : "skip"
+  );
+  
+  const sendMessageMutation = useMutation(api.messages.send);
+  const clearMutation = useMutation(api.messages.clear);
+  const upsertTableMutation = useMutation(api.tables.upsert);
+  const createSessionMutation = useMutation(api.sessions.createSession);
+
   const [liveState, setLiveState] = useState<LiveConnectionState>(LiveConnectionState.DISCONNECTED);
   const [error, setError] = useState<string | null>(null);
   
-  // Enterprise State
+  // UI/Enterprise State
   const [activeTemplate, setActiveTemplate] = useState<Template>(TEMPLATES[0]);
   const [history] = useState<JournalEntry[]>(MOCK_HISTORY);
   const [requirements, setRequirements] = useState(TEMPLATES[0].requiredFields);
   
-  // Track the most recent table for the right side panel
+  // Track the most recent table message ID for the workspace view
   const [activeTableId, setActiveTableId] = useState<string | null>(null);
 
-  // Load history on mount
+  // Sync activeTableId when messages change
   useEffect(() => {
-    const load = async () => {
-      try {
-        const history = await chatRepository.loadHistory();
-        if (history && history.length > 0) {
-            setMessages(history);
-            // Find last table in history
-            const lastTableMsg = [...history].reverse().find(m => m.actionData);
-            if (lastTableMsg) setActiveTableId(lastTableMsg.id);
-        } else {
-            // Initial Greeting if no history
-            setMessages([{
-                id: 'init-1',
-                role: Role.ASSISTANT,
-                content: getGreeting(TEMPLATES[0].id),
-                timestamp: Date.now()
-            }]);
-        }
-      } catch (e) {
-        console.error("Failed to load history", e);
-      }
-    };
-    load();
-  }, []);
-
-  // Persist history
-  useEffect(() => {
-    if (messages.length > 0) {
-      chatRepository.saveHistory(messages);
+    if (convexMessages.length > 0) {
+      const lastTableMsg = [...convexMessages].reverse().find(m => m.actionData);
+      if (lastTableMsg) setActiveTableId(lastTableMsg._id);
     }
-  }, [messages]);
+  }, [convexMessages]);
 
-  // Simulate requirements checking based on message content
+  // Simulate requirements checking
   useEffect(() => {
-     if (messages.length > 0) {
-        const fullText = messages.map(m => m.content).join(' ').toLowerCase();
-        
+     if (convexMessages.length > 0) {
+        const fullText = convexMessages.map(m => m.content).join(' ').toLowerCase();
         setRequirements(prev => prev.map(req => {
             const keywords = req.label.toLowerCase().split(' ');
-            const isMet = keywords.some(k => fullText.includes(k)) || messages.some(m => m.actionData?.rows.length);
+            const isMet = keywords.some(k => fullText.includes(k)) || (activeTable?.rows.length ?? 0) > 0;
             return { ...req, completed: isMet };
         }));
      }
-  }, [messages, activeTemplate]);
+  }, [convexMessages, activeTable, activeTemplate]);
+
+  // Create/update session when user signs in or template changes
+  useEffect(() => {
+    if (shouldFetchData && userSessionId) {
+      createSessionMutation({
+        sessionId: userSessionId,
+        platform: authService.getPlatform(),
+        templateId: activeTemplate.id,
+      }).catch(err => console.error('[useChatViewModel] Failed to create session:', err));
+    }
+  }, [shouldFetchData, userSessionId, activeTemplate.id, createSessionMutation]);
 
   const changeTemplate = useCallback(async (templateId: string) => {
       const t = TEMPLATES.find(t => t.id === templateId);
       if (t) {
-          // IMPORTANT: If we are live, we must disconnect to allow the next session
-          // to pick up the new template context.
           if (liveState === LiveConnectionState.CONNECTED || liveState === LiveConnectionState.CONNECTING) {
               await chatRepository.stopLiveSession();
               setLiveState(LiveConnectionState.DISCONNECTED);
           }
-
           setActiveTemplate(t);
           setRequirements(t.requiredFields);
           
-          // If the conversation is in its initial state (only 1 AI message and no actions), update the greeting
-          setMessages(prev => {
-              if (prev.length <= 1 && prev[0]?.role === Role.ASSISTANT && !prev[0].actionData) {
-                   return [{
-                      ...prev[0],
-                      content: getGreeting(t.id),
-                      timestamp: Date.now()
-                   }];
-              }
-              return prev;
-          });
+          // Update session with new template
+          if (shouldFetchData && userSessionId) {
+            await createSessionMutation({
+              sessionId: userSessionId,
+              platform: authService.getPlatform(),
+              templateId: t.id,
+            });
+          }
       }
-  }, [liveState]);
+  }, [liveState, shouldFetchData, userSessionId, createSessionMutation]);
 
   const clearConversation = useCallback(async () => {
+    if (!shouldFetchData || !userSessionId) return;
+    
     await chatRepository.stopLiveSession();
-    await chatRepository.clearHistory();
-    // Reset to generic greeting based on active template
-    setMessages([{
-        id: Date.now().toString(),
+    await clearMutation({ sessionId: userSessionId });
+    
+    // Initial Greeting
+    await sendMessageMutation({
+        sessionId: userSessionId,
         role: Role.ASSISTANT,
-        content: getGreeting(activeTemplate.id),
-        timestamp: Date.now()
-    }]);
+        content: getGreeting(activeTemplate.id)
+    });
+    
     setLiveState(LiveConnectionState.DISCONNECTED);
     setRequirements(activeTemplate.requiredFields.map(r => ({ ...r, completed: false })));
     setActiveTableId(null);
-  }, [activeTemplate]);
+  }, [activeTemplate, userSessionId, shouldFetchData, clearMutation, sendMessageMutation]);
 
-  const updateMessageData = useCallback((id: string, newData: TableData) => {
-    setMessages(prev => prev.map(msg => 
-      msg.id === id ? { ...msg, actionData: newData } : msg
-    ));
-  }, []);
+  const updateMessageData = useCallback(async (id: string, newData: TableData) => {
+    if (!shouldFetchData || !userSessionId) return;
+    
+    // Update the table mutation which syncs the session's active table
+    await upsertTableMutation({
+        sessionId: userSessionId,
+        ...newData
+    });
+  }, [userSessionId, shouldFetchData, upsertTableMutation]);
 
   const toggleLiveSession = useCallback(async () => {
-    console.log('[ViewModel] toggleLiveSession called, current state:', liveState);
+    if (!shouldFetchData || !userSessionId) {
+      setError('Please sign in to use live voice features');
+      return;
+    }
     
     if (liveState === LiveConnectionState.CONNECTED || liveState === LiveConnectionState.CONNECTING) {
-      console.log('[ViewModel] Stopping live session...');
       await chatRepository.stopLiveSession();
       setLiveState(LiveConnectionState.DISCONNECTED);
       return;
     }
 
     setError(null);
-    console.log('[ViewModel] Starting live session with template:', activeTemplate.name);
-    
     try {
-      // Pass activeTemplate to startLiveSession
       await chatRepository.startLiveSession(
         activeTemplate,
-        (state) => {
-          console.log('[ViewModel] Live state changed to:', state);
-          setLiveState(state);
-        },
-        (text, action, actionData) => {
-          console.log('[ViewModel] Received message:', { text, action, hasData: !!actionData });
-          setMessages(prev => {
-            const newMsg: ChatMessage = {
-              id: Date.now().toString(),
-              role: Role.ASSISTANT,
-              content: text || (action ? "Updating table..." : "Listening..."),
-              timestamp: Date.now(),
-              action: action,
-              actionData: actionData
-            };
-            // If this message has a table, make it active
-            if (actionData) {
-                setActiveTableId(newMsg.id);
-            }
-            return [...prev, newMsg];
+        (state) => setLiveState(state),
+        async (text, action, actionData) => {
+          // Push to Convex - This will trigger real-time UI update for all clients
+          await sendMessageMutation({
+            sessionId: userSessionId,
+            role: Role.ASSISTANT,
+            content: text || (action ? "Updating table..." : "Listening..."),
+            action: action ? { type: action.type, args: action.args } : undefined,
+            actionData: actionData
           });
         },
-        (err) => {
-          console.error('[ViewModel] Session error:', err);
-          setError(err);
-        }
+        (err) => setError(err)
       );
     } catch (e) {
-      console.error('[ViewModel] toggleLiveSession exception:', e);
       setError(e instanceof Error ? e.message : 'Unknown error');
     }
-  }, [liveState, activeTemplate]);
+  }, [liveState, activeTemplate, userSessionId, shouldFetchData, sendMessageMutation]);
 
-  // Legacy text sending
-  const sendMessage = useCallback(async (text: string, attachments: Attachment[] = [], isEditMode: boolean = false) => {
-  }, []);
+  const sendMessage = useCallback(async (text: string) => {
+      if (!shouldFetchData || !userSessionId) return;
+      
+      await sendMessageMutation({
+          sessionId: userSessionId,
+          role: Role.USER,
+          content: text
+      });
+  }, [userSessionId, shouldFetchData, sendMessageMutation]);
 
   const transcribeAudio = useCallback(async (blob: Blob) => "", []);
 
-  // Derived state: Get active table data
-  const activeTableData = activeTableId 
-    ? messages.find(m => m.id === activeTableId)?.actionData 
-    : null;
-
-  // Debug info for audio troubleshooting
-  const getAudioDebugInfo = useCallback(() => {
-    return {
-      sent: chatRepository.debugAudioChunksSent,
-      received: chatRepository.debugAudioChunksReceived
-    };
-  }, []);
+  // Map Convex messages to ChatMessage type
+  const mappedMessages: ChatMessage[] = convexMessages.map(msg => ({
+    id: msg._id,
+    role: msg.role as Role,
+    content: msg.content,
+    timestamp: msg.timestamp,
+    attachments: [] as Attachment[],
+    action: msg.action as AgentAction | undefined,
+    actionData: msg.actionData,
+  }));
 
   return {
-    messages,
+    messages: mappedMessages,
     isLoading: liveState === LiveConnectionState.CONNECTING,
     liveState,
     error,
@@ -256,9 +286,12 @@ export function useChatViewModel() {
     changeTemplate,
     history,
     requirements,
-    activeTableData,
+    activeTableData: activeTable,
     activeTableId,
     setActiveTableId,
-    getAudioDebugInfo
+    getAudioDebugInfo: () => ({
+      sent: chatRepository.debugAudioChunksSent,
+      received: chatRepository.debugAudioChunksReceived
+    })
   };
 }

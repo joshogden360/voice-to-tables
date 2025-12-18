@@ -1,59 +1,37 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useChatViewModel } from '../hooks/useChatViewModel';
+import { useAuth } from '../hooks/useAuth';
 import { ChatInput } from './ChatInput';
 import { MessageBubble } from './MessageBubble';
 import { BriefingHeader, JournalSidebar, RightPanel, TemplateSwitcher } from './EnterpriseWidgets';
+import { AuthUserButton } from './AuthWrapper';
 import { Trash2, PanelLeft, PanelRight, Snowflake, RefreshCw } from 'lucide-react';
 
-// --- Snowfall Component ---
-const Snowfall: React.FC<{ intensity: number }> = ({ intensity }) => {
-  // Determine number of flakes based on intensity (0 to 1) -> 0 to 200 flakes
-  const flakeCount = Math.floor(intensity * 200);
-
-  const flakes = useMemo(() => {
-    return Array.from({ length: 200 }).map((_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      animationDuration: Math.random() * 5 + 5 + 's',
-      animationDelay: Math.random() * 5 + 's',
-      // Increased opacity and size for better visibility
-      opacity: Math.random() * 0.5 + 0.3, 
-      size: Math.random() * 0.8 + 0.4 + 'rem', // Slightly larger for icons
-    }));
-  }, []);
-
+// --- Aura Glow Component ---
+const AuraGlow: React.FC<{ intensity: number }> = ({ intensity }) => {
   return (
-    <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
-      <style>
-        {`
-          @keyframes snowfall {
-            0% { transform: translateY(-10vh) translateX(0) rotate(0deg); }
-            100% { transform: translateY(110vh) translateX(20px) rotate(360deg); }
-          }
-        `}
-      </style>
-      {flakes.slice(0, flakeCount).map((flake) => (
-        <div
-          key={flake.id}
-          className="absolute text-white/80"
-          style={{
-            left: `${flake.left}%`,
-            top: `-20px`,
-            width: flake.size,
-            height: flake.size,
-            opacity: flake.opacity,
-            animation: `snowfall ${flake.animationDuration} linear infinite`,
-            animationDelay: flake.animationDelay,
-          }}
-        >
-           <Snowflake strokeWidth={1.5} className="w-full h-full" />
-        </div>
-      ))}
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      <div className="absolute inset-0 bg-noise opacity-30 z-10 mix-blend-overlay"></div>
+      
+      {/* Dynamic Aura Blooms */}
+      <div 
+        className="absolute top-[-10%] left-[-5%] w-[70rem] h-[70rem] bg-emerald-500/10 rounded-full blur-[120px] mix-blend-multiply animate-aura"
+        style={{ opacity: intensity * 0.8 }}
+      ></div>
+      <div 
+        className="absolute bottom-[-5%] right-[-10%] w-[60rem] h-[60rem] bg-indigo-500/10 rounded-full blur-[100px] mix-blend-multiply animate-aura"
+        style={{ opacity: intensity * 0.6, animationDelay: '-5s' }}
+      ></div>
+      <div 
+        className="absolute top-[20%] right-[-5%] w-[40rem] h-[40rem] bg-slate-400/5 rounded-full blur-[80px] mix-blend-soft-light animate-aura"
+        style={{ opacity: intensity * 0.4, animationDelay: '-2s' }}
+      ></div>
     </div>
   );
 };
 
 export const ChatScreen: React.FC = () => {
+  const { user, platform } = useAuth();
   const { 
     messages, 
     isLoading, 
@@ -104,8 +82,8 @@ export const ChatScreen: React.FC = () => {
   // Easter Egg State
   const [showManifest, setShowManifest] = useState(false);
   
-  // Snow State
-  const [snowIntensity, setSnowIntensity] = useState(0.5); // Default to stronger snow
+  // UI Aesthetic State
+  const [auraIntensity, setAuraIntensity] = useState(0.6);
 
   // Auto-open right panel when a table is active
   useEffect(() => {
@@ -120,43 +98,39 @@ export const ChatScreen: React.FC = () => {
   }, [messages, isLoading]);
 
   return (
-    <div className="flex h-full w-full bg-gradient-to-br from-rose-100/40 via-slate-50 to-rose-200/40 text-slate-900 font-sans overflow-hidden relative selection:bg-rose-200 selection:text-rose-900">
+    <div className="flex h-full w-full bg-[#f8fafc] text-slate-900 font-sans overflow-hidden relative selection:bg-emerald-100 selection:text-emerald-900">
       
-      {/* Background Decor - Christmas Theme (Red Only Glows) */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-          <div className="absolute inset-0 bg-noise opacity-30 z-10 mix-blend-overlay"></div>
-          {/* Top Red Glow - More Intense */}
-          <div className="absolute top-[-20%] left-[-10%] w-[60rem] h-[60rem] bg-red-600/20 rounded-full blur-[100px] opacity-70 mix-blend-multiply animate-pulse duration-[10000ms]"></div>
-          {/* Bottom Red Glow - More Intense */}
-          <div className="absolute bottom-[-10%] right-[-20%] w-[50rem] h-[50rem] bg-rose-600/25 rounded-full blur-[80px] opacity-70 mix-blend-multiply animate-pulse duration-[8000ms]"></div>
-      </div>
-
-      {/* Snowfall Layer */}
-      <Snowfall intensity={snowIntensity} />
+      {/* Background Aura */}
+      <AuraGlow intensity={auraIntensity} />
       
       {/* Debug Info Overlay - Shows state and errors on screen */}
       {(error || liveState !== 'disconnected') && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[100] bg-black/80 text-white text-xs px-4 py-2 rounded-full backdrop-blur-md font-mono max-w-[90%] truncate">
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[100] bg-slate-900/90 text-white text-[10px] px-5 py-1.5 rounded-full backdrop-blur-xl border border-white/10 font-mono shadow-2xl tracking-tight">
           {debugInfo}
         </div>
       )}
 
-      {/* Intensity Slider (Bottom Right - Highly Visible) - Hidden on mobile for space */}
-      <div className="hidden md:flex absolute bottom-6 right-6 z-30 items-center gap-3 bg-white/90 backdrop-blur-md p-3 rounded-full border border-rose-200 shadow-xl shadow-rose-900/10 animate-in slide-in-from-bottom-10 fade-in duration-1000">
-          <Snowflake size={18} className={`text-rose-500 ${snowIntensity > 0.8 ? 'animate-spin' : ''}`} />
-          <div className="flex flex-col w-32">
+      {/* Aura Intensity Widget - Bottom Right */}
+      <div className="hidden md:flex fixed bottom-6 right-6 z-30 items-center gap-3 bg-white/80 backdrop-blur-xl px-4 py-2.5 rounded-xl border border-slate-200 shadow-lg group">
+          <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 transition-transform group-hover:scale-110">
+            <RefreshCw size={12} className={liveState === 'connected' ? 'animate-spin' : ''} />
+          </div>
+          <div className="flex flex-col w-24 gap-1">
+             <div className="flex justify-between items-center">
+                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Aura</span>
+                <span className="text-[8px] font-mono text-emerald-600 font-bold">{Math.round(auraIntensity * 100)}%</span>
+             </div>
              <input 
                 type="range" 
-                min="0" 
+                min="0.1" 
                 max="1" 
                 step="0.01"
-                value={snowIntensity}
-                onChange={(e) => setSnowIntensity(parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-rose-100 rounded-lg appearance-none cursor-pointer accent-rose-600"
-                title="Snow Intensity"
+                value={auraIntensity}
+                onChange={(e) => setAuraIntensity(parseFloat(e.target.value))}
+                className="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                title="Aura Intensity"
              />
           </div>
-          <span className="text-[9px] font-bold uppercase tracking-widest text-rose-800 w-12 text-right">Let it snow</span>
       </div>
 
       {/* EASTER EGG OVERLAY: SCRIPT MANIFEST */}
@@ -219,10 +193,10 @@ export const ChatScreen: React.FC = () => {
 
       {/* --- LEFT PANEL: JOURNAL --- */}
       <div className={`
-        ${leftOpen ? 'fixed md:relative left-0 top-0 w-64 md:w-64 translate-x-0 z-50 md:z-20' : 'fixed md:relative w-0 -translate-x-full'} 
-        h-full flex-shrink-0 bg-white/95 md:bg-white/40 backdrop-blur-xl border-r border-white/50 transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] overflow-hidden shadow-2xl md:shadow-none
+        ${leftOpen ? 'fixed md:relative left-0 top-0 w-72 md:w-72 translate-x-0 z-50 md:z-20' : 'fixed md:relative w-0 -translate-x-full'} 
+        h-full flex-shrink-0 bg-white/80 md:bg-white/40 backdrop-blur-3xl border-r border-slate-200/50 transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] overflow-hidden shadow-2xl md:shadow-none
       `}>
-          <div className="w-64 h-full">
+          <div className="w-72 h-full">
              <JournalSidebar entries={history} />
           </div>
       </div>
@@ -239,47 +213,57 @@ export const ChatScreen: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 z-10 relative bg-transparent">
         
         {/* Sticky Header */}
-        <header className="h-auto min-h-16 pt-safe flex items-center justify-between px-3 md:px-4 border-b border-white/30 bg-white/20 backdrop-blur-md z-30 flex-shrink-0">
-            <div className="flex items-center gap-2 md:gap-4">
+        <header className="h-16 pt-safe flex items-center justify-between px-4 md:px-6 border-b border-slate-200/40 bg-white/40 backdrop-blur-xl z-30 flex-shrink-0 shadow-sm shadow-slate-200/20">
+            {/* Left: Panel Toggle */}
+            <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setLeftOpen(!leftOpen)}
-                  className="p-2 text-slate-500 hover:text-rose-600 hover:bg-white/50 rounded-lg transition-colors touch-manipulation"
+                  className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all active:scale-95"
                   aria-label="Toggle History"
                 >
-                    <PanelLeft size={20} className={!leftOpen ? 'opacity-50' : ''} />
+                    <PanelLeft size={18} className={!leftOpen ? 'opacity-40' : ''} />
                 </button>
-                <div className="h-4 w-px bg-slate-300/50 hidden md:block"></div>
-                <h1 className="text-base md:text-lg font-serif italic text-slate-800 hidden sm:block">Voice to Data <span className="text-[10px] md:text-xs not-italic text-rose-500/80 tracking-widest ml-1 md:ml-2 font-sans uppercase">Holiday</span></h1>
             </div>
 
-            {/* Briefing Info Centered - Responsive */}
-            <div className="flex-1 flex justify-center px-2">
-                 <BriefingHeader template={activeTemplate} />
+            {/* Center: Branding */}
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                <h1 className="text-xl md:text-2xl font-serif font-black tracking-tighter text-slate-900">
+                   Voice
+                </h1>
             </div>
 
-            <div className="flex items-center gap-2 md:gap-4">
+            {/* Right: Actions & Profile */}
+            <div className="flex items-center gap-1.5">
                  <button 
                     onClick={clearConversation}
-                    className="p-2 text-slate-400 hover:text-red-600 rounded-lg transition-colors touch-manipulation"
+                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all group hidden sm:flex"
                     title="Start Fresh"
                     aria-label="Clear conversation"
                 >
-                    <RefreshCw size={18} />
+                    <RefreshCw size={16} className="group-hover:rotate-180 transition-transform duration-500" />
                 </button>
-                <div className="h-4 w-px bg-slate-300/50 hidden md:block"></div>
+                <div className="h-4 w-px bg-slate-200 mx-0.5 hidden sm:block"></div>
                 <button 
                   onClick={() => setRightOpen(!rightOpen)}
-                  className="p-2 text-slate-500 hover:text-rose-600 hover:bg-white/50 rounded-lg transition-colors touch-manipulation"
+                  className={`p-2 rounded-lg transition-all active:scale-95 ${rightOpen ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
                   aria-label="Toggle Data Panel"
                 >
-                    <PanelRight size={20} className={!rightOpen ? 'opacity-50' : ''} />
+                    <PanelRight size={16} />
                 </button>
+                <div className="h-4 w-px bg-slate-200 mx-0.5"></div>
+                <AuthUserButton />
             </div>
         </header>
+        
+        {/* Template Briefing Bar - Below Header */}
+        <div className="h-10 px-4 md:px-6 bg-white/60 backdrop-blur-sm border-b border-slate-100 flex items-center justify-center flex-shrink-0">
+            <BriefingHeader template={activeTemplate} />
+        </div>
 
         {/* Scrollable Chat Area */}
         <main className="flex-1 overflow-y-auto relative scrollbar-hide">
-            <div className="min-h-full flex flex-col justify-end pb-64 md:pb-56 pt-6 md:pt-10 px-3 md:px-12 max-w-4xl mx-auto">
+            <div className="min-h-full flex flex-col justify-end pb-56 md:pb-52 pt-6 md:pt-8 px-4 md:px-6 max-w-4xl mx-auto">
                 {messages.map((msg) => (
                 <MessageBubble 
                     key={msg.id} 
@@ -300,13 +284,15 @@ export const ChatScreen: React.FC = () => {
         {/* Floating Input Controls */}
         <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-40 pb-safe">
              {/* Template Switcher */}
-            <div className="absolute bottom-40 md:bottom-48 left-0 right-0 flex justify-center pb-2 md:pb-4 px-2 animate-in slide-in-from-bottom-4 duration-1000 pointer-events-auto">
-                <TemplateSwitcher 
-                    templates={templates} 
-                    activeTemplate={activeTemplate} 
-                    onSelect={changeTemplate}
-                    onEasterEgg={() => setShowManifest(true)}
-                />
+            <div className="absolute bottom-32 md:bottom-36 left-0 right-0 flex justify-center px-4 pointer-events-auto">
+                <div className="w-full max-w-4xl flex justify-center">
+                    <TemplateSwitcher 
+                        templates={templates} 
+                        activeTemplate={activeTemplate} 
+                        onSelect={changeTemplate}
+                        onEasterEgg={() => setShowManifest(true)}
+                    />
+                </div>
             </div>
 
             <ChatInput 
@@ -321,10 +307,10 @@ export const ChatScreen: React.FC = () => {
 
       {/* --- RIGHT PANEL: DATA & TOOLS --- */}
       <div className={`
-        ${rightOpen ? 'fixed md:relative right-0 top-0 w-full md:w-96 translate-x-0 z-50 md:z-20' : 'fixed md:relative w-0 translate-x-full'} 
-        h-full flex-shrink-0 bg-white/95 md:bg-white/60 backdrop-blur-2xl border-l border-white/50 transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] overflow-hidden shadow-2xl
+        ${rightOpen ? 'fixed md:relative right-0 top-0 w-full md:w-[420px] translate-x-0 z-50 md:z-20' : 'fixed md:relative w-0 translate-x-full'} 
+        h-full flex-shrink-0 bg-white/90 md:bg-white/40 backdrop-blur-3xl border-l border-slate-200/50 transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] overflow-hidden shadow-2xl
       `}>
-         <div className="w-full md:w-96 h-full flex flex-col">
+         <div className="w-full md:w-[420px] h-full flex flex-col">
              <RightPanel 
                 requirements={requirements} 
                 tableData={activeTableData} 

@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.voicetotables.app',
-  appName: 'VoiceToTables',
+  appId: 'com.voice.app',
+  appName: 'Voice',
   webDir: 'dist',
   android: {
     // Enable WebView debugging for console logs
@@ -22,6 +22,17 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     iosScheme: 'capacitor',
     cleartext: true
+  },
+  plugins: {
+    // Deep linking configuration for Clerk OAuth
+    // Format: voicetotables://
+    App: {
+      appUrlOpen: {
+        // Deep link scheme for authentication callbacks
+        // Must match Clerk dashboard redirect URL settings
+        schemes: ['voice']
+      }
+    }
   }
 };
 
