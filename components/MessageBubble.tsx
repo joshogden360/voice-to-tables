@@ -9,14 +9,16 @@ interface MessageBubbleProps {
   onFocus?: () => void;
   hideIfAssistant?: boolean;
   isLast?: boolean;
+  onVerifyTable?: (data: TableData) => void;
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ 
   message, 
-  onUpdateTable, 
-  onFocus,
+  isLast = false, 
   hideIfAssistant = false,
-  isLast = false
+  onUpdateTable,
+  onFocus,
+  onVerifyTable
 }) => {
   const isUser = message.role === Role.USER;
   const isSystem = message.role === Role.SYSTEM;
@@ -89,10 +91,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             <div className={`pt-4 flex justify-center w-full ${hideIfAssistant ? 'mt-0' : 'mt-4'}`}>
                 <div className="w-full max-w-2xl text-left transform transition-all duration-700 hover:scale-[1.01]">
                     <ActionContainer 
-                    action={message.action} 
-                    data={message.actionData} 
-                    onUpdate={onUpdateTable}
-                    onFocus={onFocus}
+                        action={message.action} 
+                        data={message.actionData} 
+                        onUpdate={onUpdateTable}
+                        onFocus={onFocus}
+                        onVerify={onVerifyTable}
                     />
                 </div>
             </div>

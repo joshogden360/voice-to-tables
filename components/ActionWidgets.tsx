@@ -103,7 +103,11 @@ export const DataTableWidget: React.FC<{
     data: TableData; 
     onUpdate?: (newData: TableData) => void;
     onFocus?: () => void;
-}> = ({ data, onUpdate, onFocus }) => {
+    onVerify?: (data: TableData) => void;
+}> = ({ data,  onUpdate, 
+  onFocus,
+  onVerify 
+}) => {
   const [isConfirmed, setIsConfirmed] = useState(false);
 
   const downloadCSV = (e: React.MouseEvent) => {
@@ -280,13 +284,14 @@ export const ActionContainer: React.FC<{
     action: AgentAction, 
     data?: any, 
     onUpdate?: (newData: any) => void,
-    onFocus?: () => void
-}> = ({ action, data, onUpdate, onFocus }) => {
+    onFocus?: () => void,
+    onVerify?: (data: TableData) => void
+}> = ({ action, data, onUpdate, onFocus, onVerify }) => {
   switch (action.type) {
     case 'OPEN_SCANNER':
       return <ScannerWidget />;
     case 'GENERATE_TABLE':
-      return <DataTableWidget data={data} onUpdate={onUpdate} onFocus={onFocus} />;
+      return <DataTableWidget data={data} onUpdate={onUpdate} onFocus={onFocus} onVerify={onVerify} />;
     default:
       return null;
   }

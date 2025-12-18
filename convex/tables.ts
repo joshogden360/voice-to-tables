@@ -137,3 +137,27 @@ export const deleteTable = mutation({
     }
   },
 });
+
+export const addToMaster = mutation({
+  args: {
+    priorExperience: v.string(),
+    country: v.string(),
+    languages: v.string(),
+    populationIndex: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // This is an anonymous global collection
+    await ctx.db.insert("masterSurvey", {
+      ...args,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+export const getMasterCount = query({
+  args: {},
+  handler: async (ctx) => {
+    const results = await ctx.db.query("masterSurvey").collect();
+    return results.length;
+  },
+});

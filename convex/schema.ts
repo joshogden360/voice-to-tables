@@ -62,4 +62,14 @@ export default defineSchema({
     lastUpdatedAt: v.number(),
   })
     .index("by_user", ["userId"]),
+  
+  // Master Anonymous Survey - Aggregated results for the 12/25 Demo
+  masterSurvey: defineTable({
+    priorExperience: v.string(),
+    country: v.string(),
+    languages: v.string(),
+    populationIndex: v.string(), // e.g., "1 of 8,245,678,901"
+    timestamp: v.number(),
+  })
+    .index("by_timestamp", ["timestamp"]),
 });

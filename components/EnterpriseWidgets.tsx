@@ -1,8 +1,26 @@
 import React, { useState } from 'react';
 import { Template, JournalEntry, TableData } from '../types';
-import { History, Database, ListChecks, Check, Database as DataIcon, PlusCircle, ArrowRight } from 'lucide-react';
+import { History, Database, ListChecks, Check, Database as DataIcon, PlusCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 import { DataTableWidget } from './ActionWidgets';
 
+// --- Sub-component: Journal Card ---
+const JournalCard: React.FC<{ entry: JournalEntry }> = ({ entry }) => (
+    <div className="group flex flex-col gap-3 p-5 rounded-2xl hover:bg-white bg-transparent transition-all duration-500 cursor-pointer border border-transparent hover:border-slate-200 hover:shadow-2xl hover:shadow-slate-200/60 relative overflow-hidden active:scale-[0.98]">
+        <div className="flex justify-between items-start relative z-10">
+            <h4 className="text-sm font-serif font-black text-slate-800 group-hover:text-emerald-900 transition-colors leading-tight max-w-[70%]">{entry.title}</h4>
+            <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${entry.status === 'Synced' ? 'text-emerald-500' : 'text-amber-500 animate-pulse'}`}>
+                {entry.status}
+            </div>
+        </div>
+        <p className="text-[11px] text-slate-400 font-medium relative z-10 leading-relaxed group-hover:text-slate-500 transition-colors line-clamp-2">{entry.preview}</p>
+        {/* Animated Slide-in Arrow */}
+        <div className="absolute right-4 bottom-4 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
+            <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <ArrowRight size={14} strokeWidth={3} />
+            </div>
+        </div>
+    </div>
+);
 // --- Briefing Header (Mini Version for Top Bar) ---
 interface BriefingHeaderProps {
   template: Template;
@@ -41,26 +59,29 @@ export const JournalSidebar: React.FC<JournalSidebarProps> = ({ entries }) => {
           <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Recent Intelligence</p>
        </div>
        
-       <div className="flex-1 flex flex-col gap-1 overflow-y-auto px-4 py-4 scrollbar-hide">
+       <div className="flex-1 flex flex-col gap-6 overflow-y-auto px-6 py-4 scrollbar-hide">
           {entries.length > 0 ? (
-              entries.map(entry => (
-                 <div key={entry.id} className="group flex flex-col gap-2 p-5 rounded-2xl hover:bg-white bg-transparent transition-all duration-300 cursor-pointer border border-transparent hover:border-slate-200 hover:shadow-xl hover:shadow-slate-200/40 relative overflow-hidden">
-                    <div className="flex justify-between items-center relative z-10">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{entry.date}</span>
-                        <div className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-wider ${entry.status === 'Synced' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                           {entry.status}
-                        </div>
+              <>
+                {/* Today Section */}
+                <div>
+                    <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 px-2">Today</h5>
+                    <div className="flex flex-col gap-3">
+                        {entries.filter(e => e.date === 'Today').map(entry => (
+                            <JournalCard key={entry.id} entry={entry} />
+                        ))}
                     </div>
-                    <div className="relative z-10">
-                        <h4 className="text-sm font-semibold text-slate-800 group-hover:text-emerald-900 transition-colors leading-tight">{entry.title}</h4>
-                        <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">{entry.preview}</p>
+                </div>
+
+                {/* Yesterday Section */}
+                <div className="mt-2">
+                    <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 px-2">Yesterday</h5>
+                    <div className="flex flex-col gap-3">
+                        {entries.filter(e => e.date !== 'Today').map(entry => (
+                            <JournalCard key={entry.id} entry={entry} />
+                        ))}
                     </div>
-                    {/* Hover Arrow */}
-                    <div className="absolute right-4 bottom-4 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0 text-emerald-600">
-                        <ArrowRight size={14} />
-                    </div>
-                 </div>
-              ))
+                </div>
+              </>
           ) : (
               <div className="flex flex-col items-center justify-center h-64 text-slate-300 gap-4 opacity-70">
                   <div className="w-16 h-16 rounded-3xl bg-slate-100 flex items-center justify-center">
@@ -180,12 +201,13 @@ export const RightPanel: React.FC<RightPanelProps> = ({ requirements, tableData,
                             </div>
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-6 opacity-60">
-                                <div className="w-24 h-24 rounded-[2.5rem] bg-white shadow-2xl shadow-slate-200/50 flex items-center justify-center border border-slate-100">
-                                    <DataIcon size={40} strokeWidth={1} className="text-slate-300" />
+                                <div className="w-24 h-24 rounded-[2.5rem] bg-white shadow-2xl shadow-slate-200/50 flex items-center justify-center border border-slate-100 relative group">
+                                    <div className="absolute inset-0 rounded-[2.5rem] bg-emerald-500/5 animate-pulse" />
+                                    <DataIcon size={40} strokeWidth={1} className="text-slate-300 relative z-10" />
                                 </div>
-                                <div className="text-center">
-                                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-900">Awaiting Signal</p>
-                                    <p className="text-[11px] mt-2 max-w-[200px] leading-relaxed">Structural data will be visualized here upon verbal confirmation.</p>
+                                <div className="text-center group">
+                                    <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-900">Awaiting Signal</p>
+                                    <p className="text-[11px] mt-3 max-w-[220px] leading-relaxed text-slate-400 font-medium">Structural data will be visualized here upon verbal confirmation.</p>
                                 </div>
                             </div>
                         )}

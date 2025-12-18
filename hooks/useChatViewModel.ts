@@ -6,96 +6,109 @@ import { chatRepository } from '../services/chatRepository';
 import { useAuth } from './useAuth';
 import { authService } from '../services/authService';
 
-// Mock Templates
+// Premium Templates for the Voice Survey Track
 const TEMPLATES: Template[] = [
   {
-    id: 'holiday-prep',
-    name: 'Holiday Feast Planner',
-    category: 'Events',
-    version: 'v2024.12',
-    syncDestination: 'Notion Family Hub',
+    id: 'voice-demo',
+    name: 'Voice Interaction Demo',
+    category: 'Onboarding',
+    version: 'v1.0.0',
+    syncDestination: 'Global Master Index',
     requiredFields: [
-      { label: 'Dish Name', completed: false },
-      { label: 'Ingredients Status', completed: false },
-      { label: 'Assigned Chef', completed: false },
-      { label: 'Dietary Notes', completed: false },
+      { label: 'Prior Experience', completed: false },
+      { label: 'Country of Origin', completed: false },
+      { label: 'Languages Spoken', completed: false },
     ]
   },
   {
-    id: 'meeting-master',
-    name: 'Executive Meeting Record',
-    category: 'Work',
-    version: 'v4.0.0',
-    syncDestination: 'Jira / Slack',
+    id: 'strategy-brief',
+    name: 'Executive Strategy Brief',
+    category: 'Leadership',
+    version: 'v2.1',
+    syncDestination: 'Board Portal',
     requiredFields: [
-      { label: 'Agenda Topic', completed: false },
-      { label: 'Key Decisions', completed: false },
-      { label: 'Action Items', completed: false },
-      { label: 'Owner & Due Date', completed: false },
+      { label: 'Strategic Pillar', completed: false },
+      { label: 'Risk Assessment', completed: false },
+      { label: 'Resource Allocation', completed: false },
+      { label: 'Impact Timeline', completed: false },
     ]
   },
   {
-    id: 'food-log',
-    name: 'Daily Nutrition Tracker',
-    category: 'Health',
-    version: 'v2.5.0',
-    syncDestination: 'MyFitnessPal API',
+    id: 'logistics-audit',
+    name: 'Global Logistics Audit',
+    category: 'Operations',
+    version: 'v4.2.0',
+    syncDestination: 'ERP Systems',
     requiredFields: [
-      { label: 'Meal', completed: false },
-      { label: 'Food Items', completed: false },
-      { label: 'Portion / Notes', completed: false },
+      { label: 'Supply Chain Node', completed: false },
+      { label: 'Inventory Throughput', completed: false },
+      { label: 'Latency Bottlenecks', completed: false },
     ]
   },
   {
-    id: 'field-inspection',
-    name: 'Safety Site Inspection',
-    category: 'Safety',
+    id: 'safety-report',
+    name: 'Operational Safety Report',
+    category: 'Compliance',
     version: 'v1.2.0',
-    syncDestination: 'Procore / ERP',
+    syncDestination: 'Compliance Vault',
     requiredFields: [
-      { label: 'Location / Zone', completed: false },
-      { label: 'Hazard Type', completed: false },
-      { label: 'Severity Level', completed: false },
-      { label: 'Corrective Action', completed: false },
+      { label: 'Incident Protocol', completed: false },
+      { label: 'Mitigation Status', completed: false },
+      { label: 'Safety Index Score', completed: false },
     ]
   },
   {
-    id: 'patient-intake',
-    name: 'Medical Intake Form',
-    category: 'Medicine',
+    id: 'clinical-intake',
+    name: 'Clinical Intake Summary',
+    category: 'Medical',
     version: 'v5.1.0',
-    syncDestination: 'Epic / FHIR',
+    syncDestination: 'Health Nexus',
     requiredFields: [
-      { label: 'Patient Name', completed: false },
-      { label: 'Primary Symptom', completed: false },
-      { label: 'Medications', completed: false },
-      { label: 'Allergies', completed: false },
+      { label: 'Vitals Triage', completed: false },
+      { label: 'Symptom Topology', completed: false },
+      { label: 'Medical Heritage', completed: false },
+      { label: 'Prescription Sync', completed: false },
     ]
   }
 ];
 
-// Mock History - Restored for Visual Context
+// Population Indexing Logic
+const calculatePopulation = () => {
+    // Baseline: Dec 1, 2025 estimate ~8.245 Billion
+    const p0 = 8245000000;
+    const startOfDec = new Date('2025-12-01T00:00:00Z').getTime();
+    const now = Date.now();
+    
+    // Approx growth: 2.31 people per second
+    const elapsedSeconds = (now - startOfDec) / 1000;
+    const currentPop = Math.floor(p0 + (elapsedSeconds * 2.31));
+    
+    return currentPop.toLocaleString();
+};
+
+// Mock History - Refined for Executive Archive Vision
 const MOCK_HISTORY: JournalEntry[] = [
-  { id: 'h1', date: 'Today', title: 'Holiday Feast Planner', status: 'Pending', preview: 'Turkey & Stuffing: Needs Shopping' },
-  { id: 'h2', date: 'Yesterday', title: 'Executive Meeting Record', status: 'Synced', preview: 'Q4 Strategy: 3 Actions' },
-  { id: 'h3', date: 'Oct 24', title: 'Daily Nutrition Tracker', status: 'Synced', preview: 'Breakfast, Lunch & Dinner' },
-  { id: 'h4', date: 'Oct 23', title: 'Executive Meeting Record', status: 'Synced', preview: 'Weekly Standup: Complete' },
+  { id: 'h1', date: 'Today', title: 'Global Logistics Audit', status: 'Pending', preview: 'High-Latency Node: Singapore Port. Throughput: 42k TEU.' },
+  { id: 'h2', date: 'Today', title: 'Executive Strategy Brief', status: 'Synced', preview: 'Stellar Risk Mitigation. Resource allocation confirmed for Q1.' },
+  { id: 'h3', date: 'Yesterday', title: 'Clinical Intake Summary', status: 'Synced', preview: 'Patient: Anonymous. Vitals stable. Symptom Topology mapped.' },
+  { id: 'h4', date: 'Yesterday', title: 'Operational Safety Report', status: 'Synced', preview: 'Site B Inspection Complete. Safety Index: 0.94.' },
+  { id: 'h5', date: 'Yesterday', title: 'Global Logistics Audit', status: 'Synced', preview: 'Supply Chain Sync: 4 Nodes verified.' },
 ];
 
 const getGreeting = (templateId: string) => {
     switch(templateId) {
-        case 'holiday-prep': 
-            return "Holiday Feast Planner\nIdentify dishes you want to serve\nCheck ingredient availability\nAssign chefs and dietary notes";
-        case 'field-inspection': 
-            return "Safety Site Inspection\nDocument the location and hazards\nIdentify severity levels\nRecord corrective action items";
-        case 'patient-intake': 
-            return "Medical Intake Assistant\nGather patient name and symptoms\nCheck current medications\nVerify any known allergies";
-        case 'meeting-master': 
-            return "Executive Meeting Recorder\nCapture agenda topics\nRecord key decisions\nTrack action items and owners";
-        case 'food-log': 
-            return "Daily Nutrition Log\nLog your meals for the day\nList food items simply\nNo calorie counting needed";
+        case 'voice-demo': 
+            return "Voice Interaction Demo\nLet's verify your conversational profile\nPlease share your prior experience with voice AI\nSpecify your country of origin and languages spoken";
+        case 'strategy-brief': 
+            return "Executive Strategy Brief\nDefine primary strategic pillars\nAssess operational risks\nOutline resource allocation and impact timelines";
+        case 'logistics-audit': 
+            return "Global Logistics Audit\nIdentify critical supply chain nodes\nAudit inventory throughput\nPinpoint latency bottlenecks";
+        case 'safety-report': 
+            return "Operational Safety Report\nReview active incident protocols\nStatus of mitigation efforts\nCalculate Safety Index scores";
+        case 'clinical-intake': 
+            return "Clinical Intake Summary\nTriage primary vitals\nMap symptom topology\nRecord inherited medical heritage";
         default: 
-            return "Voice to Data Assistant\nStart a live conversation\nSpeak naturally to gather data\nGenerate structured tables";
+            return "Executive Intelligence Assistant\nStart a secure live conversation\nSpeak naturally to gather intelligence\nGenerate structured data repositories";
     }
 };
 
@@ -118,10 +131,13 @@ export function useChatViewModel() {
     shouldFetchData ? { sessionId: userSessionId! } : "skip"
   );
   
+  const masterCount = useQuery(api.tables.getMasterCount) || 0;
+  
   const sendMessageMutation = useMutation(api.messages.send);
   const clearMutation = useMutation(api.messages.clear);
   const upsertTableMutation = useMutation(api.tables.upsert);
   const createSessionMutation = useMutation(api.sessions.createSession);
+  const addToMasterMutation = useMutation(api.tables.addToMaster);
 
   const [liveState, setLiveState] = useState<LiveConnectionState>(LiveConnectionState.DISCONNECTED);
   const [error, setError] = useState<string | null>(null);
@@ -258,6 +274,16 @@ export function useChatViewModel() {
       });
   }, [userSessionId, shouldFetchData, sendMessageMutation]);
 
+  const submitToMaster = useCallback(async (data: { priorExperience: string, country: string, languages: string }) => {
+    const population = calculatePopulation();
+    const index = `${masterCount + 1} of ${population}`;
+    
+    await addToMasterMutation({
+        ...data,
+        populationIndex: index
+    });
+  }, [masterCount, addToMasterMutation]);
+
   const transcribeAudio = useCallback(async (blob: Blob) => "", []);
 
   // Map Convex messages to ChatMessage type
@@ -281,6 +307,7 @@ export function useChatViewModel() {
     clearConversation,
     toggleLiveSession,
     updateMessageData,
+    submitToMaster,
     activeTemplate,
     templates: TEMPLATES,
     changeTemplate,

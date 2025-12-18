@@ -42,6 +42,7 @@ export const ChatScreen: React.FC = () => {
     liveState, 
     error,
     updateMessageData,
+    submitToMaster,
     activeTemplate,
     changeTemplate,
     templates,
@@ -100,6 +101,20 @@ export const ChatScreen: React.FC = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
+  const handleSurveyModeToggle = () => {
+        setSurveyMode(!surveyMode);
+    };
+
+    const handleVerifyTable = async (data: any) => { // Changed TableData to any for broader compatibility
+        if (activeTemplate.id === 'voice-demo') {
+            const firstRow = data.rows[0] || {};
+            await submitToMaster({
+                priorExperience: String(firstRow['Prior Experience'] || ''),
+                country: String(firstRow['Country of Origin'] || ''),
+                languages: String(firstRow['Languages Spoken'] || '')
+            });
+        }
+    };
   return (
     <div className="flex h-full w-full bg-[#f8fafc] text-slate-900 font-sans overflow-hidden relative selection:bg-emerald-100 selection:text-emerald-900">
       
@@ -248,7 +263,7 @@ export const ChatScreen: React.FC = () => {
                 </button>
                 <div className="h-4 w-px bg-slate-200 mx-0.5 hidden sm:block"></div>
                 <button 
-                  onClick={() => setSurveyMode(!surveyMode)}
+                  onClick={handleSurveyModeToggle}
                   className={`p-2 rounded-lg transition-all active:scale-95 flex items-center gap-2 ${surveyMode ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
                   title={surveyMode ? 'Survey Mode Active' : 'Enable Survey Mode'}
                 >
@@ -286,6 +301,7 @@ export const ChatScreen: React.FC = () => {
                         updateMessageData(msg.id, newData);
                         setActiveTableId(msg.id); // Sync right panel on edit
                     }}
+                    onVerifyTable={handleVerifyTable}
                     onFocus={() => {
                         if (msg.actionData) setActiveTableId(msg.id); // Sync right panel on click
                     }}
