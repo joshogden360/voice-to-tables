@@ -171,8 +171,8 @@ export const DataTableWidget: React.FC<{
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.25em] font-sans leading-none">{data.title}</h3>
               <div className="flex items-center gap-2 mt-2.5">
                 <span className={`w-1.5 h-1.5 rounded-full ${isConfirmed ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-amber-400 animate-pulse'}`}></span>
-                <p className="text-[9px] text-slate-400 font-bold tracking-[0.15em] uppercase">
-                    {isConfirmed ? 'Verified Integrity' : 'Computational Audit'}
+                <p className={`text-[9px] font-bold tracking-[0.15em] uppercase transition-colors ${isConfirmed ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {isConfirmed ? 'Global Index Synchronized' : 'Computational Audit'}
                 </p>
               </div>
           </div>

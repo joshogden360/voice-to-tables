@@ -257,7 +257,8 @@ export function useChatViewModel() {
             actionData: actionData
           });
         },
-        (err) => setError(err)
+        (err) => setError(err),
+        { masterCount }
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');

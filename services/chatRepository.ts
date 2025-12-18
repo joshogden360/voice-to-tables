@@ -79,12 +79,12 @@ class ChatRepository {
     template: Template,
     onStateChange: (state: LiveConnectionState) => void,
     onMessage: (text: string | null, action?: AgentAction, actionData?: any) => void,
-    onError: (error: string) => void
+    onError: (error: string) => void,
+    metadata?: { masterCount?: number }
   ) {
     onStateChange(LiveConnectionState.CONNECTING);
-    console.log('[ChatRepository] Starting live session...');
-
     try { // Outer try to catch all initialization errors
+      const masterCount = metadata?.masterCount ?? 0;
       // 1. Get Microphone Stream FIRST (Prevents Audio Session interruption later)
       console.log('[ChatRepository] Requesting microphone access...');
       try {
@@ -136,16 +136,17 @@ class ChatRepository {
             ${template.id === 'voice-demo' ? `
             SESSION TYPE: Global Voice Interaction Demo.
             
-            YOUR TASKS:
+             YOUR TASKS:
             1. Authenticate the user's conversational profile by asking exactly THREE questions:
                - "Have you talked to a voice agent before?"
                - "What country are you from?"
                - "What languages do you speak?"
             2. For each question, be brief and professional.
             3. Once all three are answered, calculate their unique Global Index. 
-            4. The current estimated world population is approximately ${template.version === 'v1.0.0' ? '8.25 Billion' : '8.2 Billion'}.
-            5. Call 'generateTable' with their record. The title MUST include their index (e.g., "Profile: [Index] of [Total Population]").
-            6. In the summary, explain that their record has been indexed in the Global Master Archive.
+            4. Their specific record index is ${masterCount + 1}.
+            5. The current estimated world population is approximately ${template.version === 'v1.0.0' ? '8.25 Billion' : '8.2 Billion'}.
+            6. Call 'generateTable' with their record. The title MUST include their index (e.g., "PROFILE: ${masterCount + 1} OF [Total Population]").
+            7. In the summary, explain that their record has been indexed in the Global Master Archive.
             ` : `
             SESSION TYPE: Structured Data Collection (${template.name}).
             OBJECTIVE: Populate columns: ${columns}.
