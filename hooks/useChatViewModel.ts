@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { ChatMessage, Role, Attachment, LiveConnectionState, AgentAction, TableData, Template, JournalEntry } from '../types';
@@ -6,68 +6,45 @@ import { chatRepository } from '../services/chatRepository';
 import { useAuth } from './useAuth';
 import { authService } from '../services/authService';
 
-// Premium Templates for the Voice Survey Track
+// Santa Factory Templates
 const TEMPLATES: Template[] = [
   {
-    id: 'voice-demo',
-    name: 'Voice Interaction Demo',
-    category: 'Onboarding',
-    version: 'v1.0.0',
-    syncDestination: 'Global Master Index',
+    id: 'contact-book',
+    name: 'Naughty & Nice List',
+    category: 'Contacts',
+    version: '2025.12',
+    syncDestination: 'The Big Book',
     requiredFields: [
-      { label: 'Prior Experience', completed: false },
-      { label: 'Country of Origin', completed: false },
-      { label: 'Languages Spoken', completed: false },
+      { label: 'Name', completed: false },
+      { label: 'Address', completed: false },
+      { label: 'Behavior Status', completed: false },
+      { label: 'Gift Idea', completed: false },
     ]
   },
   {
-    id: 'strategy-brief',
-    name: 'Executive Strategy Brief',
-    category: 'Leadership',
-    version: 'v2.1',
-    syncDestination: 'Board Portal',
+    id: 'inventory-manager',
+    name: 'Workshop Inventory',
+    category: 'Logistics',
+    version: 'v4.0',
+    syncDestination: 'Warehouse A',
     requiredFields: [
-      { label: 'Strategic Pillar', completed: false },
-      { label: 'Risk Assessment', completed: false },
-      { label: 'Resource Allocation', completed: false },
-      { label: 'Impact Timeline', completed: false },
+      { label: 'Item Name', completed: false },
+      { label: 'Stock Count', completed: false },
+      { label: 'Material Cost', completed: false },
+      { label: 'Supplier', completed: false },
     ]
   },
   {
-    id: 'logistics-audit',
-    name: 'Global Logistics Audit',
-    category: 'Operations',
-    version: 'v4.2.0',
-    syncDestination: 'ERP Systems',
+    id: 'budget-planner',
+    name: 'Toy Budget',
+    category: 'Finance',
+    version: 'FY25',
+    syncDestination: 'Treasury Vault',
     requiredFields: [
-      { label: 'Supply Chain Node', completed: false },
-      { label: 'Inventory Throughput', completed: false },
-      { label: 'Latency Bottlenecks', completed: false },
-    ]
-  },
-  {
-    id: 'safety-report',
-    name: 'Operational Safety Report',
-    category: 'Compliance',
-    version: 'v1.2.0',
-    syncDestination: 'Compliance Vault',
-    requiredFields: [
-      { label: 'Incident Protocol', completed: false },
-      { label: 'Mitigation Status', completed: false },
-      { label: 'Safety Index Score', completed: false },
-    ]
-  },
-  {
-    id: 'clinical-intake',
-    name: 'Clinical Intake Summary',
-    category: 'Medical',
-    version: 'v5.1.0',
-    syncDestination: 'Health Nexus',
-    requiredFields: [
-      { label: 'Vitals Triage', completed: false },
-      { label: 'Symptom Topology', completed: false },
-      { label: 'Medical Heritage', completed: false },
-      { label: 'Prescription Sync', completed: false },
+      { label: 'Category', completed: false },
+      { label: 'Allocated Amount', completed: false },
+      { label: 'Current Spend', completed: false },
+      { label: 'Variance', completed: false },
     ]
   }
 ];
@@ -86,31 +63,26 @@ const calculatePopulation = () => {
     return currentPop.toLocaleString();
 };
 
-// Mock History - Refined for Executive Archive Vision
+// Mock History - Santa Factory Archive
 const MOCK_HISTORY: JournalEntry[] = [
-  { id: 'h1', date: 'Today', title: 'Global Logistics Audit', status: 'Pending', preview: 'High-Latency Node: Singapore Port. Throughput: 42k TEU.' },
-  { id: 'h2', date: 'Today', title: 'Executive Strategy Brief', status: 'Synced', preview: 'Stellar Risk Mitigation. Resource allocation confirmed for Q1.' },
-  { id: 'h3', date: 'Yesterday', title: 'Clinical Intake Summary', status: 'Synced', preview: 'Patient: Anonymous. Vitals stable. Symptom Topology mapped.' },
-  { id: 'h4', date: 'Yesterday', title: 'Operational Safety Report', status: 'Synced', preview: 'Site B Inspection Complete. Safety Index: 0.94.' },
-  { id: 'h5', date: 'Yesterday', title: 'Global Logistics Audit', status: 'Synced', preview: 'Supply Chain Sync: 4 Nodes verified.' },
+  { id: 'h1', date: 'Today', title: 'Workshop Inventory', status: 'Pending', preview: 'Low stock alert: Wooden Wheels. Current: 50. Required: 500.' },
+  { id: 'h2', date: 'Today', title: 'Naughty & Nice List', status: 'Synced', preview: 'Added: Little Timmy. Status: Nice. Gift: Bicycle.' },
+  { id: 'h3', date: 'Yesterday', title: 'Toy Budget', status: 'Synced', preview: 'Raw Materials overspend. Reallocating from R&D.' },
+  { id: 'h4', date: 'Yesterday', title: 'Naughty & Nice List', status: 'Synced', preview: 'Updated: Sarah Jones. Moved to Nice list.' },
 ];
 
 const getGreeting = (templateId: string) => {
     switch(templateId) {
-        case 'voice-demo': 
-            return "Voice Interaction Demo\nLet's verify your conversational profile\nPlease share your prior experience with voice AI\nSpecify your country of origin and languages spoken";
-        case 'strategy-brief': 
-            return "Executive Strategy Brief\nDefine primary strategic pillars\nAssess operational risks\nOutline resource allocation and impact timelines";
-        case 'logistics-audit': 
-            return "Global Logistics Audit\nIdentify critical supply chain nodes\nAudit inventory throughput\nPinpoint latency bottlenecks";
-        case 'safety-report': 
-            return "Operational Safety Report\nReview active incident protocols\nStatus of mitigation efforts\nCalculate Safety Index scores";
-        case 'clinical-intake': 
-            return "Clinical Intake Summary\nTriage primary vitals\nMap symptom topology\nRecord inherited medical heritage";
-        default: 
-            return "Executive Intelligence Assistant\nStart a secure live conversation\nSpeak naturally to gather intelligence\nGenerate structured data repositories";
+        case 'contact-book': 
+            return "Ho ho ho! Who should we add to the list today? Tell me their name and how they've been behaving.";
+        case 'inventory-manager': 
+            return "Greetings, Foreman. Let's do a stock check. What items are we counting in the workshop?";
+        case 'budget-planner': 
+            return "Ah, the numbers. Let's review our gold reserves. What expenses do we need to track?";
+        default:
+            return "Merry Christmas! I'm ready to help run the factory. What are we working on?";
     }
-};
+}; 
 
 export function useChatViewModel() {
   // Get authenticated user info
@@ -120,12 +92,17 @@ export function useChatViewModel() {
   const shouldFetchData = isLoaded && isSignedIn && user && userSessionId;
   
   // Convex Real-time State - only fetch when authenticated
-  // Backend now uses ctx.auth.getUserIdentity() for userId
   const convexMessages = useQuery(
     api.messages.list, 
     shouldFetchData ? { sessionId: userSessionId! } : "skip"
   ) || [];
   
+  // Santa Factory Data Sync
+  const inventoryData = useQuery(api.factory.getInventory) || [];
+  const contactsData = useQuery(api.factory.getContacts) || [];
+  const budgetData = useQuery(api.factory.getBudget) || [];
+  
+  // Session Table (Fallback)
   const activeTable = useQuery(
     api.tables.getBySession, 
     shouldFetchData ? { sessionId: userSessionId! } : "skip"
@@ -138,6 +115,10 @@ export function useChatViewModel() {
   const upsertTableMutation = useMutation(api.tables.upsert);
   const createSessionMutation = useMutation(api.sessions.createSession);
   const addToMasterMutation = useMutation(api.tables.addToMaster);
+  
+  // Santa Factory Mutations
+  const updateInventoryMutation = useMutation(api.factory.updateInventory);
+  const addContactMutation = useMutation(api.factory.addContact);
 
   const [liveState, setLiveState] = useState<LiveConnectionState>(LiveConnectionState.DISCONNECTED);
   const [error, setError] = useState<string | null>(null);
@@ -157,6 +138,50 @@ export function useChatViewModel() {
       if (lastTableMsg) setActiveTableId(lastTableMsg._id);
     }
   }, [convexMessages]);
+  
+  // Transform Persistent Data to Generic Table Format for UI
+  const persistentTableData: TableData | undefined = useMemo(() => {
+      if (activeTemplate.id === 'inventory-manager') {
+          return {
+              title: 'Workshop Inventory',
+              columns: ['Item', 'Quantity', 'Cost', 'Supplier'],
+              rows: inventoryData.map(i => ({
+                  id: i._id,
+                  'Item': i.item,
+                  'Quantity': i.qtyOnHand ?? 0,
+                  'Cost': `$${i.unitCost ?? 0}`,
+                  'Supplier': i.supplier ?? 'Unknown'
+              }))
+          };
+      } else if (activeTemplate.id === 'contact-book') {
+          return {
+              title: 'Naughty & Nice List',
+              columns: ['Name', 'Address', 'Status', 'Notes'],
+              rows: contactsData.map(c => ({
+                  id: c._id,
+                  'Name': c.householdName || 'Unknown',
+                  'Address': c.addressLine1 || 'Unknown',
+                  'Status': c.relationshipTier || 'Pending', // Mapped to status
+                  'Notes': c.notes || ''
+              }))
+          };
+      } else if (activeTemplate.id === 'budget-planner') {
+           return {
+               title: 'Toy Budget',
+               columns: ['Category', 'Allocated', 'Spent'],
+               rows: budgetData.map(b => ({
+                   id: b._id,
+                   'Category': b.item,
+                   'Allocated': `$${b.value}`,
+                   'Spent': '$0' // Placeholder
+               }))
+           };
+      }
+      return undefined;
+  }, [activeTemplate.id, inventoryData, contactsData, budgetData]);
+
+  // Use persistent data if available, otherwise session data
+  const finalActiveTableData = persistentTableData || activeTable;
 
   // Simulate requirements checking
   useEffect(() => {
@@ -164,11 +189,11 @@ export function useChatViewModel() {
         const fullText = convexMessages.map(m => m.content).join(' ').toLowerCase();
         setRequirements(prev => prev.map(req => {
             const keywords = req.label.toLowerCase().split(' ');
-            const isMet = keywords.some(k => fullText.includes(k)) || (activeTable?.rows.length ?? 0) > 0;
+            const isMet = keywords.some(k => fullText.includes(k)) || (finalActiveTableData?.rows.length ?? 0) > 0;
             return { ...req, completed: isMet };
         }));
      }
-  }, [convexMessages, activeTable, activeTemplate]);
+  }, [convexMessages, finalActiveTableData, activeTemplate]);
 
   // Create/update session when user signs in or template changes
   useEffect(() => {
@@ -193,11 +218,11 @@ export function useChatViewModel() {
           
           // Update session with new template
           if (shouldFetchData && userSessionId) {
-            await createSessionMutation({
-              sessionId: userSessionId,
-              platform: authService.getPlatform(),
-              templateId: t.id,
-            });
+             await createSessionMutation({
+               sessionId: userSessionId,
+               platform: authService.getPlatform(),
+               templateId: t.id,
+             });
           }
       }
   }, [liveState, shouldFetchData, userSessionId, createSessionMutation]);
@@ -248,14 +273,40 @@ export function useChatViewModel() {
         activeTemplate,
         (state) => setLiveState(state),
         async (text, action, actionData) => {
-          // Push to Convex - This will trigger real-time UI update for all clients
+          
+          // 1. Send Message to Chat History (Convex)
           await sendMessageMutation({
             sessionId: userSessionId,
             role: Role.ASSISTANT,
-            content: text || (action ? "Updating table..." : "Listening..."),
+            content: text || (action ? "Processing..." : "Listening..."),
             action: action ? { type: action.type, args: action.args } : undefined,
             actionData: actionData
           });
+
+          // 2. Execute Action (Santa Factory Logic)
+          if (action) {
+             console.log('[useChatViewModel] Executing Action:', action.type, action.args);
+             try {
+                 if (action.type === 'UPDATE_INVENTORY' && action.args) {
+                     await updateInventoryMutation({
+                         item: action.args.item,
+                         quantity: Number(action.args.quantity),
+                         cost: action.args.cost ? Number(action.args.cost) : undefined,
+                         supplier: action.args.supplier
+                     });
+                 } else if (action.type === 'ADD_CONTACT' && action.args) {
+                     await addContactMutation({
+                         name: action.args.name,
+                         status: action.args.status,
+                         address: action.args.address,
+                         giftIdea: action.args.giftIdea
+                     });
+                 }
+                 // Add Budget logic here
+             } catch (actionErr) {
+                 console.error('[useChatViewModel] Action Execution Failed:', actionErr);
+             }
+          }
         },
         (err) => setError(err),
         { masterCount }
@@ -263,7 +314,7 @@ export function useChatViewModel() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');
     }
-  }, [liveState, activeTemplate, userSessionId, shouldFetchData, sendMessageMutation]);
+  }, [liveState, activeTemplate, userSessionId, shouldFetchData, sendMessageMutation, updateInventoryMutation, addContactMutation, masterCount]);
 
   const sendMessage = useCallback(async (text: string) => {
       if (!shouldFetchData || !userSessionId) return;
@@ -314,7 +365,7 @@ export function useChatViewModel() {
     changeTemplate,
     history,
     requirements,
-    activeTableData: activeTable,
+    activeTableData: finalActiveTableData,
     activeTableId,
     setActiveTableId,
     getAudioDebugInfo: () => ({

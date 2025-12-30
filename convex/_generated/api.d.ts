@@ -8,7 +8,9 @@
  * @module
  */
 
+import type * as factory from "../factory.js";
 import type * as messages from "../messages.js";
+import type * as seed from "../seed.js";
 import type * as sessions from "../sessions.js";
 import type * as tables from "../tables.js";
 
@@ -19,7 +21,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  factory: typeof factory;
   messages: typeof messages;
+  seed: typeof seed;
   sessions: typeof sessions;
   tables: typeof tables;
 }>;

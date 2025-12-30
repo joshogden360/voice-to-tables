@@ -35,3 +35,6 @@ android/app/build
 ios/App/build
 ios/App/Pods
 *.xcworkspace/xcuserdata
+
+# Sensitive Data
+christmas_card_circuit_csvs/contacts.csv

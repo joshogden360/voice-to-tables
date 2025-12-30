@@ -13,7 +13,7 @@ export interface ChatTurn {
 }
 
 export interface AgentAction {
-  type: 'GENERATE_TABLE' | 'OPEN_SCANNER' | 'NONE';
+  type: 'GENERATE_TABLE' | 'OPEN_SCANNER' | 'UPDATE_INVENTORY' | 'ADD_CONTACT' | 'UPDATE_BUDGET' | 'NONE';
   args?: Record<string, any>;
 }
 

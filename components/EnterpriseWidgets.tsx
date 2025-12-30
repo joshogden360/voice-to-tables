@@ -5,17 +5,17 @@ import { DataTableWidget } from './ActionWidgets';
 
 // --- Sub-component: Journal Card ---
 const JournalCard: React.FC<{ entry: JournalEntry }> = ({ entry }) => (
-    <div className="group flex flex-col gap-3 p-5 rounded-2xl hover:bg-white bg-transparent transition-all duration-500 cursor-pointer border border-transparent hover:border-slate-200 hover:shadow-2xl hover:shadow-slate-200/60 relative overflow-hidden active:scale-[0.98]">
+    <div className="group flex flex-col gap-3 p-5 rounded-2xl hover:bg-white bg-transparent transition-all duration-500 cursor-pointer border border-transparent hover:border-factory-200 hover:shadow-2xl hover:shadow-factory-200/60 relative overflow-hidden active:scale-[0.98]">
         <div className="flex justify-between items-start relative z-10">
-            <h4 className="text-sm font-serif font-black text-slate-800 group-hover:text-emerald-900 transition-colors leading-tight max-w-[70%]">{entry.title}</h4>
-            <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${entry.status === 'Synced' ? 'text-emerald-500' : 'text-amber-500 animate-pulse'}`}>
+            <h4 className="text-sm font-serif font-black text-slate-800 group-hover:text-factory-900 transition-colors leading-tight max-w-[70%]">{entry.title}</h4>
+            <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${entry.status === 'Synced' ? 'text-factory-600' : 'text-amber-500 animate-pulse'}`}>
                 {entry.status}
             </div>
         </div>
         <p className="text-[11px] text-slate-400 font-medium relative z-10 leading-relaxed group-hover:text-slate-500 transition-colors line-clamp-2">{entry.preview}</p>
         {/* Animated Slide-in Arrow */}
         <div className="absolute right-4 bottom-4 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
-            <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+            <div className="w-8 h-8 rounded-full bg-factory-50 flex items-center justify-center text-factory-600">
                 <ArrowRight size={14} strokeWidth={3} />
             </div>
         </div>
@@ -32,7 +32,7 @@ export const BriefingHeader: React.FC<BriefingHeaderProps> = ({ template }) => {
       <div className="flex items-center gap-2">
           {/* Template Badge */}
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 text-white shadow-xl shadow-slate-900/10 cursor-default border border-white/10">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span className="w-1.5 h-1.5 rounded-full bg-santa-500" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {template.name}
             </span>
@@ -97,7 +97,7 @@ export const JournalSidebar: React.FC<JournalSidebarProps> = ({ entries }) => {
        
        <div className="p-6 pt-4 border-t border-slate-200/50 bg-white/40">
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900 text-white shadow-2xl shadow-slate-900/20 cursor-pointer hover:scale-[1.02] transition-all border border-white/10 group">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-xl shadow-lg shadow-emerald-500/30 group-hover:bg-emerald-400 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-santa-600 flex items-center justify-center text-xl shadow-lg shadow-santa-600/30 group-hover:bg-santa-500 transition-colors">
                     <Check size={20} strokeWidth={3} />
                 </div>
                 <div className="flex flex-col">
@@ -136,7 +136,7 @@ export const TemplateSwitcher: React.FC<TemplateSwitcherProps> = ({ templates, a
                       className={`
                           px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-300 flex items-center gap-2.5 whitespace-nowrap
                           ${isActive 
-                              ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-white/20' 
+                              ? 'bg-santa-600 text-white shadow-lg shadow-santa-600/30 ring-1 ring-white/20' 
                               : 'text-slate-400 hover:text-white hover:bg-white/5'}
                       `}
                   >
@@ -186,7 +186,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ requirements, tableData,
                     >
                         <ListChecks size={14} />
                         Field Guide
-                        {requirements.some(r => !r.completed) && <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[8px] font-bold text-white shadow-lg shadow-emerald-500/40 ring-2 ring-white animate-bounce">{requirements.filter(r => !r.completed).length}</span>}
+                         {requirements.some(r => !r.completed) && <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-santa-500 text-[8px] font-bold text-white shadow-lg shadow-santa-500/40 ring-2 ring-white animate-bounce">{requirements.filter(r => !r.completed).length}</span>}
                     </button>
                 </div>
             </div>
@@ -202,7 +202,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ requirements, tableData,
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-6 opacity-60">
                                 <div className="w-24 h-24 rounded-[2.5rem] bg-white shadow-2xl shadow-slate-200/50 flex items-center justify-center border border-slate-100 relative group">
-                                    <div className="absolute inset-0 rounded-[2.5rem] bg-emerald-500/5 animate-pulse" />
+                                    <div className="absolute inset-0 rounded-[2.5rem] bg-factory-500/5 animate-pulse" />
                                     <DataIcon size={40} strokeWidth={1} className="text-slate-300 relative z-10" />
                                 </div>
                                 <div className="text-center group">
@@ -220,13 +220,13 @@ export const RightPanel: React.FC<RightPanelProps> = ({ requirements, tableData,
                          </div>
                          
                          {requirements.map((req, i) => (
-                             <div key={i} className={`group flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${req.completed ? 'bg-emerald-50/50 border-emerald-100' : 'bg-white border-slate-200 hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-100/30'}`}>
+                             <div key={i} className={`group flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${req.completed ? 'bg-factory-50/50 border-factory-100' : 'bg-white border-slate-200 hover:border-factory-300 hover:shadow-lg hover:shadow-factory-100/30'}`}>
                                  <div className="flex items-center gap-4">
-                                     <div className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${req.completed ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/30' : 'border-slate-200 text-transparent group-hover:border-emerald-300'}`}>
+                                     <div className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${req.completed ? 'bg-factory-500 border-factory-500 text-white shadow-lg shadow-factory-500/30' : 'border-slate-200 text-transparent group-hover:border-factory-300'}`}>
                                         <Check size={14} strokeWidth={3} />
                                      </div>
                                      <div className="flex flex-col">
-                                        <span className={`text-xs font-bold tracking-tight ${req.completed ? 'text-emerald-700 line-through opacity-60' : 'text-slate-700'}`}>{req.label}</span>
+                                        <span className={`text-xs font-bold tracking-tight ${req.completed ? 'text-factory-800 line-through opacity-60' : 'text-slate-700'}`}>{req.label}</span>
                                         {!req.completed && <span className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">Awaiting Confirmation</span>}
                                      </div>
                                  </div>

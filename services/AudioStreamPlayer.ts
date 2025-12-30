@@ -10,7 +10,7 @@ export class AudioStreamPlayer {
   private scriptNode: ScriptProcessorNode | null = null;
   private audioQueue: Float32Array[] = [];
   private isPlaying: boolean = false;
-  private readonly sourceRate: number = 24000; // Gemini sends 24kHz
+  public sourceRate: number = 24000; // Default Gemini 24kHz, can change for ElevenLabs (e.g. 44.1k)
 
   constructor() {
     // Context will be created on start() to ensure it happens on user gesture
